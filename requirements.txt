@@ -1,2 +1,2 @@
 pillow
-ogre-python
+godot-python
