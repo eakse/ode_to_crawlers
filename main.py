@@ -1,14 +1,15 @@
-
-# Import Module
 from tkinter import *
+from turtle import width
 from PIL import Image, ImageTk
  
 # Create Tkinter Object
 root = Tk()
  
 # Read the Image
-image = Image.open("Image File Path")
- 
+image = Image.open("data/images/wall_texture.png")
+
+width = 200
+height = 200
 # Resize the image using resize() method
 resize_image = image.resize((width, height))
  
