@@ -1,0 +1,23 @@
+{
+    "nameSingle": "slime",
+    "namePlural": "group of slimes",
+    "hpRandom": "3d6",
+    "defenseRandom": 5,
+    "armorRandom": 4,
+    "attacks": [
+        {
+            "weight": 10,
+            "damage": "1d3-1",
+            "attack": 1,
+            "name": "attack",
+            "attackStr": "{monster} {attack_lists.simple} {target} for {damage}."
+        },
+        {
+            "weight": 1,
+            "damage": "3d3+2",
+            "attack": 1,
+            "name": "slime2",
+            "attackStr": "{monster} {attack_lists.notsimple} {target} for {damage}."
+        }
+    ]
+}

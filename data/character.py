@@ -1,0 +1,31 @@
+from settings import *
+from monsters import BaseLoader
+
+
+class PlayerCharacter(BaseLoader):
+    def __init__(self, data=None):
+        super().__init__(data)
+        self.hpCurrent = self.hpMax
+
+
+
+
+
+
+################################################################################################################################################
+### TESTING
+
+data = {
+    "name": "eakse",
+    "hpMax": 100,
+    "armor": 2,
+    "defense": 10,
+    "test": {
+        "this": "alpha",
+        "that": "beta"
+    }
+}
+
+
+pc = PlayerCharacter(data)
+print(str(pc))

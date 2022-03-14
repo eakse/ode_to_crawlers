@@ -1,7 +1,25 @@
 from tkinter import *
-from turtle import width
 from PIL import Image, ImageTk
  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+exit(0)
 # Create Tkinter Object
 root = Tk()
  
