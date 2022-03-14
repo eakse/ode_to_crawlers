@@ -20,10 +20,8 @@ data = {
     "hpMax": 100,
     "armor": 2,
     "defense": 10,
-    "test": {
-        "this": "alpha",
-        "that": "beta"
-    }
+    
+
 }
 
 

@@ -1,2 +1,2 @@
 pillow
-godot-python
+panda3d
