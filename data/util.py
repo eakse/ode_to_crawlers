@@ -1,7 +1,7 @@
 import os
 from random import randint
 import json
-
+from PIL import Image
 
 class BaseLoader(object):
     def __init__(self, data=None):
@@ -24,6 +24,7 @@ class BaseLoader(object):
     def __str__(self) -> str:
         """Turns the BaseLoader object into a valid JSON string
         Has logic to deal with nested BaseLoader objects, both dicts and lists
+        Skips PIL.Image.Image
 
         Returns:
             str: valid JSON string
@@ -34,16 +35,14 @@ class BaseLoader(object):
                 value = self.__dict__[key].__str__()
             elif type(value) == list and len(value) > 0 and type(value[0]) == BaseLoader:
                 value = [element.__str__() for element in value]
+            elif type(value) == Image.Image:
+                # skip images
+                continue
             result[key] = value
-        # please note that the line below is less stupid than it seems.
-        # it's basically sanitizing escape slashes which was annoying the
-        # eff out of me
-        # temporarily removed :-|
-        # result = json.loads()
         return json.dumps(result)
 
     def __repr__(self) -> str:
-        return self.__str__
+        return self.__str__()
 
     @property
     def to_json(self) -> dict:

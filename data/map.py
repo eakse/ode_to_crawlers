@@ -1,7 +1,19 @@
 from settings import *
 from util import BaseLoader
 from PIL import Image
+import json
+import pickle
+# https://stackoverflow.com/a/68944117/9267296
 
+
+
+EMPTY_TILE = {
+    "n": "",
+    "e": "",
+    "s": "",
+    "w": "",
+    "f": ""
+}
 
 class MapImages:
     def __init__(self) -> None:
@@ -34,13 +46,19 @@ mapimg = MapImages()
 
 class MapTile(BaseLoader):
     def update(self):
-        self.tile_img = Image.new()
+        # start with new empty image on update
+        self.tile_img = Image.new("RGBA", (32, 32))
         if self.f == "floor":
-            self.tile_img = mapimg.floor
-        else:
-            self.tile_img = mapimg.empty
+            self.tile_img.paste(mapimg.floor, (0,0), mapimg.floor)
+        # below removed as it's stupid to paste empty on empty :-|
+        # else:
+        #     self.tile_img.paste(mapimg.empty, (0,0), mapimg.empty)
 
-        self.solid_n = True
+
+        if not hasattr(self, "corner_n"):
+            self.corner_n = True
+        if not hasattr(self, "solid_n"):
+            self.solid_n = False or self.n == "wall"
         if self.n == "wall":
             self.tile_img.paste(mapimg.wall_n, (0,0), mapimg.wall_n)
         elif self.n == "door":
@@ -48,9 +66,12 @@ class MapTile(BaseLoader):
         elif self.n == "door_hidden":
             self.tile_img.paste(mapimg.door_hidden_n, (0,0), mapimg.door_hidden_n)
         else:
-            self.solid_n = False
+            self.corner_n = False
 
-        self.solid_e = True
+        if not hasattr(self, "corner_e"):
+            self.corner_e = True
+        if not hasattr(self, "solid_e"):
+            self.solid_e = False or self.e == "wall"
         if self.e == "wall":
             self.tile_img.paste(mapimg.wall_e, (0,0), mapimg.wall_e)
         elif self.e == "door":
@@ -58,9 +79,12 @@ class MapTile(BaseLoader):
         elif self.e == "door_hidden":
             self.tile_img.paste(mapimg.door_hidden_e, (0,0), mapimg.door_hidden_e)
         else:
-            self.solid_e = False
+            self.corner_e = False
 
-        self.solid_s = True
+        if not hasattr(self, "corner_s"):
+            self.corner_s = True
+        if not hasattr(self, "solid_s"):
+            self.solid_s = False or self.s == "wall"
         if self.s == "wall":
             self.tile_img.paste(mapimg.wall_s, (0,0), mapimg.wall_s)
         elif self.s == "door":
@@ -68,9 +92,12 @@ class MapTile(BaseLoader):
         elif self.s == "door_hidden":
             self.tile_img.paste(mapimg.door_hidden_s, (0,0), mapimg.door_hidden_s)
         else:
-            self.solid_s = False
+            self.corner_s = False
 
-        self.solid_w = True
+        if not hasattr(self, "corner_w"):
+            self.corner_w = True
+        if not hasattr(self, "solid_w"):
+            self.solid_w = False or self.w == "wall"
         if self.w == "wall":
             self.tile_img.paste(mapimg.wall_w, (0,0), mapimg.wall_w)
         elif self.w == "door":
@@ -78,7 +105,7 @@ class MapTile(BaseLoader):
         elif self.w == "door_hidden":
             self.tile_img.paste(mapimg.door_hidden_w, (0,0), mapimg.door_hidden_w)
         else:
-            self.solid_w = False
+            self.corner_w = False
 
     def __init__(self, data=None):
         super().__init__(data)
@@ -96,37 +123,47 @@ class MapTile(BaseLoader):
             south (MapTile, optional): _description_. Defaults to None.
             west (MapTile, optional): _description_. Defaults to None.
         """
-        if not(self.solid_n or self.solid_e) and ((north and north.solid_e) or (east and east.solid_n)):
-            print("ne")
+        if not(self.corner_n or self.corner_e) and ((north and north.corner_e) or (east and east.corner_n)):
             self.tile_img.paste(mapimg.corner_ne, (0,0), mapimg.corner_ne)
 
-        if not(self.solid_n or self.solid_w) and ((north and north.solid_w) or (west and west.solid_n)):
-            print("nw")
+        if not(self.corner_n or self.corner_w) and ((north and north.corner_w) or (west and west.corner_n)):
             self.tile_img.paste(mapimg.corner_nw, (0,0), mapimg.corner_nw)
 
-        if not(self.solid_s or self.solid_e) and ((south and south.solid_e) or (east and east.solid_s)):
-            print("se")
+        if not(self.corner_s or self.corner_e) and ((south and south.corner_e) or (east and east.corner_s)):
             self.tile_img.paste(mapimg.corner_se, (0,0), mapimg.corner_se)
 
-        if not(self.solid_s or self.solid_w) and ((south and south.solid_w) or (west and west.solid_s)):
-            print("sw")
+        if not(self.corner_s or self.corner_w) and ((south and south.corner_w) or (west and west.corner_s)):
             self.tile_img.paste(mapimg.corner_sw, (0,0), mapimg.corner_sw)
 
+    # def __str__(self) -> str:
+    #     """Turns the BaseLoader object into a valid JSON string
+    #     Has logic to deal with nested BaseLoader objects, both dicts and lists
+
+    #     Returns:
+    #         str: valid JSON string
+    #     """
+    #     result = {}
+    #     for key, value in self.__dict__.items():
+    #         if type(value) != Image.Image:
+    #             result[key] = value
+
+    #     return json.dumps(result)
+
+    # def __repr__(self) -> str:
+    #     return self.__str__()
+
     # @property
-    # def tile(self):
-    #     pass
+    # def to_json(self) -> dict:
+    #     return json.loads(self.__str__())
 
 
-
-    # @property
-    # def n(self):
-    #     pass
-
-
-
-class Map(object):
-    def __init__(self) -> None:
-        pass
+class Map(BaseLoader):
+    def __init__(self, width: int=50, height: int=50) -> None:
+        self.tiles = [[MapTile(EMPTY_TILE) for i in range(width)] for j in range(height)]
+        
+    @property
+    def to_json(self) -> dict:
+        return self.tiles
 
     def load_tiles(self):
         pass
@@ -161,6 +198,13 @@ tile1.save_img("tile1.png")
 tile2.save_img("tile2.png")
 # tile1.tile_img.show()
 
-for image in mapimg
+map = Map()
+
+print()
+with open("testmap.pickle", "wb") as outfile:
+    pickle.dump(map, outfile)
+    # json.dump(str(map.to_json), outfile, indent=4)
+
+# for image in mapimg
 
 # print(tile1.to_json)
