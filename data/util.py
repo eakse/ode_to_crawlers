@@ -1,5 +1,54 @@
 import os
 from random import randint
+import json
+
+
+class BaseLoader(object):
+    def __init__(self, data=None):
+        if data == None:
+            return
+        if type(data) != dict:
+            data = dict(data)
+
+        for key, val in data.items():
+            setattr(self, key, self.compute_attr_value(val))
+
+    def compute_attr_value(self, value):
+        if type(value) is list:
+            return [self.compute_attr_value(x) for x in value]
+        elif type(value) is dict:
+            return BaseLoader(value)
+        else:
+            return value
+    
+    def __str__(self) -> str:
+        """Turns the BaseLoader object into a valid JSON string
+        Has logic to deal with nested BaseLoader objects, both dicts and lists
+
+        Returns:
+            str: valid JSON string
+        """
+        result = {}
+        for key, value in self.__dict__.items():
+            if type(value) == BaseLoader:
+                value = self.__dict__[key].__str__()
+            elif type(value) == list and len(value) > 0 and type(value[0]) == BaseLoader:
+                value = [element.__str__() for element in value]
+            result[key] = value
+        # please note that the line below is less stupid than it seems.
+        # it's basically sanitizing escape slashes which was annoying the
+        # eff out of me
+        # temporarily removed :-|
+        # result = json.loads()
+        return json.dumps(result)
+
+    def __repr__(self) -> str:
+        return self.__str__
+
+    @property
+    def to_json(self) -> dict:
+        return json.loads(self.__str__())
+
 
 
 def get_files_from_path(path: str = ".", ext=None) -> list:

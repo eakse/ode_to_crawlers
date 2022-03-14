@@ -1,5 +1,5 @@
 from settings import *
-from monsters import BaseLoader
+from util import BaseLoader
 
 
 class PlayerCharacter(BaseLoader):
@@ -20,7 +20,7 @@ data = {
     "hpMax": 100,
     "armor": 2,
     "defense": 10,
-    
+
 
 }
 
