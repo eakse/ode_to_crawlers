@@ -1,7 +1,9 @@
 import os
+from .ode_constants import *
 from random import randint
 import json
 from PIL import Image
+
 
 class BaseLoader(object):
     def __init__(self, data=None):
@@ -20,7 +22,7 @@ class BaseLoader(object):
             return BaseLoader(value)
         else:
             return value
-    
+
     def __str__(self) -> str:
         """Turns the BaseLoader object into a valid JSON string
         Has logic to deal with nested BaseLoader objects, both dicts and lists
@@ -33,7 +35,9 @@ class BaseLoader(object):
         for key, value in self.__dict__.items():
             if type(value) == BaseLoader:
                 value = self.__dict__[key].__str__()
-            elif type(value) == list and len(value) > 0 and type(value[0]) == BaseLoader:
+            elif (
+                type(value) == list and len(value) > 0 and type(value[0]) == BaseLoader
+            ):
                 value = [element.__str__() for element in value]
             elif type(value) == Image.Image:
                 # skip images
@@ -47,7 +51,6 @@ class BaseLoader(object):
     @property
     def to_json(self) -> dict:
         return json.loads(self.__str__())
-
 
 
 def get_files_from_path(path: str = ".", ext=None) -> list:
@@ -110,3 +113,27 @@ def roll_dice(dice, stored=0) -> int:
 
 def d20() -> int:
     return roll_dice("d20")
+
+
+def autorename_tiles():
+    prev_dir = os.getcwd()
+    os.chdir(PATH_MAP_IMAGES)
+    os.rename("sprite_00.png", "map_floor.png")
+    os.rename("sprite_01.png", "map_wall_n.png")
+    os.rename("sprite_02.png", "map_wall_w.png")
+    os.rename("sprite_03.png", "map_wall_s.png")
+    os.rename("sprite_04.png", "map_wall_e.png")
+    os.rename("sprite_05.png", "map_door_n.png")
+    os.rename("sprite_06.png", "map_door_w.png")
+    os.rename("sprite_07.png", "map_door_s.png")
+    os.rename("sprite_08.png", "map_door_e.png")
+    os.rename("sprite_09.png", "map_door_hidden_n.png")
+    os.rename("sprite_10.png", "map_door_hidden_w.png")
+    os.rename("sprite_11.png", "map_door_hidden_s.png")
+    os.rename("sprite_12.png", "map_door_hidden_e.png")
+    os.rename("sprite_13.png", "map_corner_nw.png")
+    os.rename("sprite_14.png", "map_corner_sw.png")
+    os.rename("sprite_15.png", "map_corner_se.png")
+    os.rename("sprite_16.png", "map_corner_ne.png")
+    os.rename("sprite_17.png", "map_empty.png")
+    os.chdir(prev_dir)

@@ -1,16 +1,13 @@
-from settings import *
-from util import get_files_from_path, roll_dice, BaseLoader
+from .ode_constants import *
+from .util import get_files_from_path, roll_dice, BaseLoader
 import json
 from random import randint, seed
 from pprint import pprint
 import os
 
 
-
 # randomize the randomizer
 seed()
-
-      
 
 
 class AttackLists(BaseLoader):
@@ -20,6 +17,7 @@ class AttackLists(BaseLoader):
     Args:
         BaseLoader (_type_): _description_
     """
+
     def __init__(self):
         data = {}
         for filename in get_files_from_path(PATH_ATTACKS):
@@ -41,13 +39,12 @@ class AttackLists(BaseLoader):
         """
         data = super().__getattribute__(__name)
         if type(data) == list:
-            return data[randint(0, len(data)-1)]
+            return data[randint(0, len(data) - 1)]
         else:
             return data
 
 
 attack_lists = AttackLists()
-
 
 
 class Creature(BaseLoader):
@@ -73,7 +70,7 @@ class Creature(BaseLoader):
     @property
     def hp_string(self):
         return f"{self.hpCurrent:{len(str(self.hpMax))}}/{self.hpMax}"
-    
+
     @property
     def select_attack(self):
         selectedAttackWeight = randint(1, self.totalWeight)
@@ -82,20 +79,20 @@ class Creature(BaseLoader):
             if selectedAttackWeight <= 0:
                 break
         return att
-    
+
     @property
     def select_attack_index(self):
         return self.attacks.index(self.select_attack)
-
 
     @property
     def testing123(self):
         print(self.select_attack_index)
         return self.attacks[1].attackStr.format(
-                monster=self.name, 
-                target="something", 
-                attack_lists=attack_lists,
-                damage=f"10 damage")        
+            monster=self.name,
+            target="something",
+            attack_lists=attack_lists,
+            damage=f"10 damage",
+        )
 
     @property
     def pretty_string(self):
@@ -122,18 +119,19 @@ data_dict = {
             "damage": "1d3-1",
             "attack": 1,
             "name": "attack",
-            "attackStr": "{monster} {attack_lists.simple} {target} for {damage}."
-        },        {
+            "attackStr": "{monster} {attack_lists.simple} {target} for {damage}.",
+        },
+        {
             "weight": 1,
             "damage": "3d3+2",
             "attack": 1,
             "name": "slime2",
-            "attackStr": "{monster} {attack_lists.notsimple} {target} for {damage}."
-        }
-    ]
+            "attackStr": "{monster} {attack_lists.notsimple} {target} for {damage}.",
+        },
+    ],
 }
 
-data=json.dumps(data_dict)
+data = json.dumps(data_dict)
 
 with open(f"{PATH_MONSTERS}slime.json", "w") as outfile:
     json.dump(data_dict, outfile, indent=4)

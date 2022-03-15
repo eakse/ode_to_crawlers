@@ -1,5 +1,5 @@
-from settings import *
-from util import BaseLoader
+from .ode_constants import *
+from .util import BaseLoader
 
 
 class PlayerCharacter(BaseLoader):
