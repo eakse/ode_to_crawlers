@@ -3,8 +3,6 @@ from .util import BaseLoader
 from PIL import Image
 from random import randint, seed
 import json
-import pickle
-import blosc
 
 # https://stackoverflow.com/a/68944117/9267296
 
@@ -106,6 +104,7 @@ MAPIMG = MapImages()
 
 
 class MapTile(BaseLoader):
+
     def __init__(self, data=None):
         super().__init__(data)
         self.tilesize = TILESIZE
@@ -126,8 +125,8 @@ class MapTile(BaseLoader):
         elif self._n == "door":
             self.tile_img.paste(MAPIMG.door_n, (0, 0), MAPIMG.door_n)
         elif self._n == "door_hidden":
-            self.tile_img.paste(MAPIMG.door_hidden_n,
-                                (0, 0), MAPIMG.door_hidden_n)
+            self.tile_img.paste(MAPIMG.door_hidden_n, (0, 0),
+                                MAPIMG.door_hidden_n)
         else:
             self.corner_n = False
 
@@ -140,8 +139,8 @@ class MapTile(BaseLoader):
         elif self._e == "door":
             self.tile_img.paste(MAPIMG.door_e, (0, 0), MAPIMG.door_e)
         elif self._e == "door_hidden":
-            self.tile_img.paste(MAPIMG.door_hidden_e,
-                                (0, 0), MAPIMG.door_hidden_e)
+            self.tile_img.paste(MAPIMG.door_hidden_e, (0, 0),
+                                MAPIMG.door_hidden_e)
         else:
             self.corner_e = False
 
@@ -154,8 +153,8 @@ class MapTile(BaseLoader):
         elif self._s == "door":
             self.tile_img.paste(MAPIMG.door_s, (0, 0), MAPIMG.door_s)
         elif self._s == "door_hidden":
-            self.tile_img.paste(MAPIMG.door_hidden_s,
-                                (0, 0), MAPIMG.door_hidden_s)
+            self.tile_img.paste(MAPIMG.door_hidden_s, (0, 0),
+                                MAPIMG.door_hidden_s)
         else:
             self.corner_s = False
 
@@ -168,8 +167,8 @@ class MapTile(BaseLoader):
         elif self._w == "door":
             self.tile_img.paste(MAPIMG.door_w, (0, 0), MAPIMG.door_w)
         elif self._w == "door_hidden":
-            self.tile_img.paste(MAPIMG.door_hidden_w,
-                                (0, 0), MAPIMG.door_hidden_w)
+            self.tile_img.paste(MAPIMG.door_hidden_w, (0, 0),
+                                MAPIMG.door_hidden_w)
         else:
             self.corner_w = False
 
@@ -237,33 +236,29 @@ class MapTile(BaseLoader):
             west (MapTile, optional): _description_. Defaults to None.
         """
         if not (self.corner_n or self.corner_e) and (
-            (north and north.corner_e) or (east and east.corner_n)
-        ):
+            (north and north.corner_e) or (east and east.corner_n)):
             self.tile_img.paste(MAPIMG.corner_ne, (0, 0), MAPIMG.corner_ne)
 
         if not (self.corner_n or self.corner_w) and (
-            (north and north.corner_w) or (west and west.corner_n)
-        ):
+            (north and north.corner_w) or (west and west.corner_n)):
             self.tile_img.paste(MAPIMG.corner_nw, (0, 0), MAPIMG.corner_nw)
 
         if not (self.corner_s or self.corner_e) and (
-            (south and south.corner_e) or (east and east.corner_s)
-        ):
+            (south and south.corner_e) or (east and east.corner_s)):
             self.tile_img.paste(MAPIMG.corner_se, (0, 0), MAPIMG.corner_se)
 
         if not (self.corner_s or self.corner_w) and (
-            (south and south.corner_w) or (west and west.corner_s)
-        ):
+            (south and south.corner_w) or (west and west.corner_s)):
             self.tile_img.paste(MAPIMG.corner_sw, (0, 0), MAPIMG.corner_sw)
 
 
 class Map(BaseLoader):
+
     def __init__(self, width: int = 50, height: int = 50) -> None:
         self.width = width
         self.height = height
-        self.tiles = [
-            [MapTile(EMPTY_TILE) for _ in range(self.width)] for _ in range(self.height)
-        ]
+        self.tiles = [[MapTile(EMPTY_TILE) for _ in range(self.width)]
+                      for _ in range(self.height)]
 
     @property
     def to_json(self) -> dict:
@@ -275,10 +270,8 @@ class Map(BaseLoader):
         Args:
             fix_edges (bool, optional): Set to true to call fix_edges() after randomization. Defaults to True.
         """
-        self.tiles = [
-            [MapTile(self.randomtile) for _ in range(self.width)]
-            for _ in range(self.height)
-        ]
+        self.tiles = [[MapTile(self.randomtile) for _ in range(self.width)]
+                      for _ in range(self.height)]
         if fix_edges:
             self.fix_edges()
 

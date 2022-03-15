@@ -1,10 +1,7 @@
 from .ode_constants import *
 from .util import get_files_from_path, roll_dice, BaseLoader
-import json
 from random import randint, seed
-from pprint import pprint
 import os
-
 
 # randomize the randomizer
 seed()
@@ -16,6 +13,7 @@ class AttackLists(BaseLoader):
     Idea is to pass this into the attackStr of the attacks (using the constant ATTACK_LISTS) so there's
     some randomization in the messages that get printed.
     """
+
     def __init__(self):
         data = {}
         for filename in get_files_from_path(PATH_ATTACKS):
@@ -41,6 +39,7 @@ ATTACK_LISTS = AttackLists()
 
 
 class Creature(BaseLoader):
+
     def __init__(self, data):
         super().__init__(data)
         # nice discussion here
@@ -95,8 +94,6 @@ Name: {self.name:>{width}} | HP:   {self.hp_string:>{width}}
 Def:  {self.defense:>{width}} | Arm:  {self.armor:>{width}}
 """
         return result[1:-1]
-
-
 
 
 """
