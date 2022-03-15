@@ -1,4 +1,5 @@
 .\venv\Scripts\Activate.ps1
+python.exe -m pip install --upgrade pip
 pip install -r .\requirements.txt
 # $setupPyPath = '.\setup.py'
 # $contents = [System.IO.File]::ReadAllText($setupPyPath)
