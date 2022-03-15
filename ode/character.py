@@ -7,23 +7,3 @@ class PlayerCharacter(BaseLoader):
         super().__init__(data)
         self.hpCurrent = self.hpMax
 
-
-
-
-
-
-################################################################################################################################################
-### TESTING
-
-data = {
-    "name": "eakse",
-    "hpMax": 100,
-    "armor": 2,
-    "defense": 10,
-
-
-}
-
-
-pc = PlayerCharacter(data)
-print(str(pc))

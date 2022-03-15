@@ -11,16 +11,15 @@ seed()
 
 
 class AttackLists(BaseLoader):
-    """Loads all files from path settings.py -> PATH_ATTACKS and generates a dict with lists for each dict key.
+    """Loads all files from path ode_constants.PATH_ATTACKS and generates a dict with lists for each dict key.
     When accessing a list item, it returns a random item from that list instead of the list itself.
-
-    Args:
-        BaseLoader (_type_): _description_
+    Idea is to pass this into the attackStr of the attacks (using the constant ATTACK_LISTS) so there's
+    some randomization in the messages that get printed.
     """
-
     def __init__(self):
         data = {}
         for filename in get_files_from_path(PATH_ATTACKS):
+            # generate key name from filename
             key = os.path.basename(".".join(filename.split(".")[:-1]))
             with open(filename) as infile:
                 # using this instead of readlines() due to the '\n' character being added with readlines()
@@ -30,12 +29,6 @@ class AttackLists(BaseLoader):
 
     def __getattribute__(self, __name: str):
         """Getter override for lists to return a random element list item
-
-        Args:
-            __name (str): _description_
-
-        Returns:
-            _type_: _description_
         """
         data = super().__getattribute__(__name)
         if type(data) == list:
@@ -44,7 +37,7 @@ class AttackLists(BaseLoader):
             return data
 
 
-attack_lists = AttackLists()
+ATTACK_LISTS = AttackLists()
 
 
 class Creature(BaseLoader):
@@ -90,7 +83,7 @@ class Creature(BaseLoader):
         return self.attacks[1].attackStr.format(
             monster=self.name,
             target="something",
-            attack_lists=attack_lists,
+            attack_lists=ATTACK_LISTS,
             damage=f"10 damage",
         )
 
@@ -104,54 +97,6 @@ Def:  {self.defense:>{width}} | Arm:  {self.armor:>{width}}
         return result[1:-1]
 
 
-################################################################################################################################################
-### TESTING
-
-data_dict = {
-    "nameSingle": "slime",
-    "namePlural": "group of slimes",
-    "hpRandom": "3d6",
-    "defenseRandom": 5,
-    "armorRandom": 4,
-    "attacks": [
-        {
-            "weight": 10,
-            "damage": "1d3-1",
-            "attack": 1,
-            "name": "attack",
-            "attackStr": "{monster} {attack_lists.simple} {target} for {damage}.",
-        },
-        {
-            "weight": 1,
-            "damage": "3d3+2",
-            "attack": 1,
-            "name": "slime2",
-            "attackStr": "{monster} {attack_lists.notsimple} {target} for {damage}.",
-        },
-    ],
-}
-
-data = json.dumps(data_dict)
-
-with open(f"{PATH_MONSTERS}slime.json", "w") as outfile:
-    json.dump(data_dict, outfile, indent=4)
-
-creature = Creature(data_dict)
-pprint(creature.to_json)
-
-# for _ in range(20):
-#     print(creature.testing123)
-
-# exit(0)
-# target = Monster(data)
-# someMonster = Monster(data)
-
-# # someMonster.pp()
-# print(someMonster)
-
-# someMonster.save_to_json(f"{PATH_MONSTERS}slime.json")
-
-# someMonster.attack(target)
 
 
 """

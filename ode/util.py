@@ -6,12 +6,14 @@ from PIL import Image
 
 
 class BaseLoader(object):
+    """Base class from which most other classes inherit from.
+    Functionality to dynamically load/save as JSON
+    """
     def __init__(self, data=None):
         if data == None:
             return
         if type(data) != dict:
             data = dict(data)
-
         for key, val in data.items():
             setattr(self, key, self.compute_attr_value(val))
 
@@ -40,7 +42,7 @@ class BaseLoader(object):
             ):
                 value = [element.__str__() for element in value]
             elif type(value) == Image.Image:
-                # skip images
+                # skip PIL images
                 continue
             result[key] = value
         return json.dumps(result)
@@ -85,7 +87,24 @@ def get_files_from_path(path: str = ".", ext=None) -> list:
 
 
 def roll_dice(dice, stored=0) -> int:
-    # print(dice, stored)
+    """Recursive method to return an int from standard dice notation.
+    Valid exampes:
+        3d6
+        2d4+2
+        d6
+        3d6+4+d4-1
+
+    Args:
+        dice (str or int): the dice to roll. Accepts int for arithmatic reasons, and 
+                           to be able to return fixed values (eg for armor/defense etc.) 
+        stored (int, optional): Stores the previous result. Defaults to 0.
+
+    Raises:
+        ValueError: Raised when the function doesn't know what to do with the input dice
+
+    Returns:
+        int: result of the dice roll(s)
+    """
     if type(dice) == int or dice.isnumeric():
         stored = stored + int(dice)
         result = stored
@@ -108,6 +127,7 @@ def roll_dice(dice, stored=0) -> int:
         raise ValueError(
             f"ValueError exception thrown\n  Dice:  {dice}\n  Stored: {stored}"
         )
+    # TODO: Not sure if I should actually use the max below. I might need to split the main function into two functions and only apply the max() on the final result.
     return max(result, 0)
 
 
@@ -116,6 +136,8 @@ def d20() -> int:
 
 
 def autorename_tiles():
+    """Simple function to rename sprites from piskelapp to the correct names.
+    """
     prev_dir = os.getcwd()
     os.chdir(PATH_MAP_IMAGES)
     os.rename("sprite_00.png", "map_floor.png")

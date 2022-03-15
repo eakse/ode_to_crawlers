@@ -11,7 +11,9 @@ import blosc
 seed()
 
 
-class MapEdge:
+class TileEdge:
+    """Simple class to do some simple manipulation of tile edges
+    """
     def __init__(self, extra_empty=0, start_type=None) -> None:
         self.types = ["none", "wall", "door", "door_hidden"]
         for _ in range(extra_empty):
@@ -38,7 +40,9 @@ class MapEdge:
         return self.current
 
 
-class MapFloor:
+class TileFloor:
+    """Simple class to do some simple manipulation of floors
+    """
     def __init__(self, extra_empty=0, start_type="floor") -> None:
         self.types = ["none", "floor"]
         for _ in range(extra_empty):
@@ -63,6 +67,8 @@ class MapFloor:
 
 
 class MapImages:
+    """Simple container class for the map images.
+    """
     def __init__(self) -> None:
         self.floor = Image.open(f"{PATH_MAP_IMAGES}map_floor.png")
         self.empty = Image.open(f"{PATH_MAP_IMAGES}map_empty.png")
@@ -88,7 +94,8 @@ class MapImages:
         self.corner_sw = Image.open(f"{PATH_MAP_IMAGES}map_corner_sw.png")
 
 
-mapimg = MapImages()
+"""Constant for MapImages"""
+MAPIMG = MapImages()
 
 
 class MapTile(BaseLoader):
@@ -101,18 +108,18 @@ class MapTile(BaseLoader):
         # start with new empty image on update
         self.tile_img = Image.new("RGBA", (self.tilesize, self.tilesize))
         if self._f == "floor":
-            self.tile_img.paste(mapimg.floor, (0, 0), mapimg.floor)
+            self.tile_img.paste(MAPIMG.floor, (0, 0), MAPIMG.floor)
 
         if not hasattr(self, "corner_n"):
             self.corner_n = True
         if not hasattr(self, "solid_n"):
             self.solid_n = False or self.n == "wall"
         if self._n == "wall":
-            self.tile_img.paste(mapimg.wall_n, (0, 0), mapimg.wall_n)
+            self.tile_img.paste(MAPIMG.wall_n, (0, 0), MAPIMG.wall_n)
         elif self._n == "door":
-            self.tile_img.paste(mapimg.door_n, (0, 0), mapimg.door_n)
+            self.tile_img.paste(MAPIMG.door_n, (0, 0), MAPIMG.door_n)
         elif self._n == "door_hidden":
-            self.tile_img.paste(mapimg.door_hidden_n, (0, 0), mapimg.door_hidden_n)
+            self.tile_img.paste(MAPIMG.door_hidden_n, (0, 0), MAPIMG.door_hidden_n)
         else:
             self.corner_n = False
 
@@ -121,11 +128,11 @@ class MapTile(BaseLoader):
         if not hasattr(self, "solid_e"):
             self.solid_e = False or self.e == "wall"
         if self._e == "wall":
-            self.tile_img.paste(mapimg.wall_e, (0, 0), mapimg.wall_e)
+            self.tile_img.paste(MAPIMG.wall_e, (0, 0), MAPIMG.wall_e)
         elif self._e == "door":
-            self.tile_img.paste(mapimg.door_e, (0, 0), mapimg.door_e)
+            self.tile_img.paste(MAPIMG.door_e, (0, 0), MAPIMG.door_e)
         elif self._e == "door_hidden":
-            self.tile_img.paste(mapimg.door_hidden_e, (0, 0), mapimg.door_hidden_e)
+            self.tile_img.paste(MAPIMG.door_hidden_e, (0, 0), MAPIMG.door_hidden_e)
         else:
             self.corner_e = False
 
@@ -134,11 +141,11 @@ class MapTile(BaseLoader):
         if not hasattr(self, "solid_s"):
             self.solid_s = False or self.s == "wall"
         if self._s == "wall":
-            self.tile_img.paste(mapimg.wall_s, (0, 0), mapimg.wall_s)
+            self.tile_img.paste(MAPIMG.wall_s, (0, 0), MAPIMG.wall_s)
         elif self._s == "door":
-            self.tile_img.paste(mapimg.door_s, (0, 0), mapimg.door_s)
+            self.tile_img.paste(MAPIMG.door_s, (0, 0), MAPIMG.door_s)
         elif self._s == "door_hidden":
-            self.tile_img.paste(mapimg.door_hidden_s, (0, 0), mapimg.door_hidden_s)
+            self.tile_img.paste(MAPIMG.door_hidden_s, (0, 0), MAPIMG.door_hidden_s)
         else:
             self.corner_s = False
 
@@ -147,11 +154,11 @@ class MapTile(BaseLoader):
         if not hasattr(self, "solid_w"):
             self.solid_w = False or self.w == "wall"
         if self._w == "wall":
-            self.tile_img.paste(mapimg.wall_w, (0, 0), mapimg.wall_w)
+            self.tile_img.paste(MAPIMG.wall_w, (0, 0), MAPIMG.wall_w)
         elif self._w == "door":
-            self.tile_img.paste(mapimg.door_w, (0, 0), mapimg.door_w)
+            self.tile_img.paste(MAPIMG.door_w, (0, 0), MAPIMG.door_w)
         elif self._w == "door_hidden":
-            self.tile_img.paste(mapimg.door_hidden_w, (0, 0), mapimg.door_hidden_w)
+            self.tile_img.paste(MAPIMG.door_hidden_w, (0, 0), MAPIMG.door_hidden_w)
         else:
             self.corner_w = False
 
@@ -221,22 +228,22 @@ class MapTile(BaseLoader):
         if not (self.corner_n or self.corner_e) and (
             (north and north.corner_e) or (east and east.corner_n)
         ):
-            self.tile_img.paste(mapimg.corner_ne, (0, 0), mapimg.corner_ne)
+            self.tile_img.paste(MAPIMG.corner_ne, (0, 0), MAPIMG.corner_ne)
 
         if not (self.corner_n or self.corner_w) and (
             (north and north.corner_w) or (west and west.corner_n)
         ):
-            self.tile_img.paste(mapimg.corner_nw, (0, 0), mapimg.corner_nw)
+            self.tile_img.paste(MAPIMG.corner_nw, (0, 0), MAPIMG.corner_nw)
 
         if not (self.corner_s or self.corner_e) and (
             (south and south.corner_e) or (east and east.corner_s)
         ):
-            self.tile_img.paste(mapimg.corner_se, (0, 0), mapimg.corner_se)
+            self.tile_img.paste(MAPIMG.corner_se, (0, 0), MAPIMG.corner_se)
 
         if not (self.corner_s or self.corner_w) and (
             (south and south.corner_w) or (west and west.corner_s)
         ):
-            self.tile_img.paste(mapimg.corner_sw, (0, 0), mapimg.corner_sw)
+            self.tile_img.paste(MAPIMG.corner_sw, (0, 0), MAPIMG.corner_sw)
 
 
 class Map(BaseLoader):
@@ -276,7 +283,7 @@ class Map(BaseLoader):
 
     @property
     def randomtile(self):
-        edge = MapEdge(extra_empty=2)
+        edge = TileEdge(extra_empty=2)
         return {
             "_n": edge.random,
             "_e": edge.random,
@@ -293,40 +300,3 @@ class Map(BaseLoader):
             json.dump(json.loads(str(self.to_json)), outfile, indent=4)
 
 
-################################################################################################################################################
-### TESTING
-
-
-# tile_data1 = {
-#     "n": "none",
-#     "e": "none",
-#     "s": "none",
-#     "w": "none",
-#     "f": "floor"
-# }
-# tile_data2 = {
-#     "n": "door",
-#     "e": "wall",
-#     "s": "wall",
-#     "w": "wall",
-#     "f": "floor"
-# }
-
-
-# tile1 = MapTile(tile_data1)
-# tile2 = MapTile(tile_data2)
-# tile1.update_corners(tile2, tile2, tile2, tile2)
-# tile1.save_img("tile1.png")
-# tile2.save_img("tile2.png")
-# # tile1.tile_img.show()
-
-# map = Map()
-
-# print()
-# with open("testmap.blosc", "wb") as outfile:
-#     outfile.write(blosc.compress(pickle.dumps(map)))
-#     # json.dump(str(map.to_json), outfile, indent=4)
-
-# for image in mapimg
-
-# print(tile1.to_json)

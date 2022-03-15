@@ -1,6 +1,6 @@
 import tkinter as tk
 from PIL import Image, ImageTk
-from ode.map import Map, MapFloor, MapTile, MapEdge
+from ode.map import Map, TileFloor, MapTile, TileEdge
 from ode.ode_constants import *
 import os
 
@@ -107,31 +107,31 @@ class MapEditor(tk.Frame):
     def canvas_w_event(self, event):
         """Cycle north edge"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].n = MapEdge(start_type=self.map.tiles[x][y].n).next
+        self.map.tiles[x][y].n = TileEdge(start_type=self.map.tiles[x][y].n).next
         self.update()
 
     def canvas_a_event(self, event):
         """Cycle west edge"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].w = MapEdge(start_type=self.map.tiles[x][y].w).next
+        self.map.tiles[x][y].w = TileEdge(start_type=self.map.tiles[x][y].w).next
         self.update()
 
     def canvas_s_event(self, event):
         """Cycle south edge"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].s = MapEdge(start_type=self.map.tiles[x][y].s).next
+        self.map.tiles[x][y].s = TileEdge(start_type=self.map.tiles[x][y].s).next
         self.update()
 
     def canvas_d_event(self, event):
         """Cycle east edge"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].e = MapEdge(start_type=self.map.tiles[x][y].e).next
+        self.map.tiles[x][y].e = TileEdge(start_type=self.map.tiles[x][y].e).next
         self.update()
 
     def canvas_f_event(self, event):
         """Cycle floor"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].f = MapFloor(start_type=self.map.tiles[x][y].f).next
+        self.map.tiles[x][y].f = TileFloor(start_type=self.map.tiles[x][y].f).next
         self.update()
 
     def init_map(self):
