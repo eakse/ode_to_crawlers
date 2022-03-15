@@ -6,7 +6,6 @@ import os
 
 
 class MapEditor(tk.Frame):
-
     def __init__(self, parent):
         super(MapEditor, self).__init__(parent)
         self.copy = EMPTY_TILE
@@ -21,6 +20,8 @@ class MapEditor(tk.Frame):
         self.hover_delay = 100
         self.hover_delay_waiting = False
         self.fix_edges = True
+        
+        self.used_font = ('Calibri 14')
 
         self.canvas = tk.Canvas(
             self,
@@ -68,6 +69,7 @@ class MapEditor(tk.Frame):
         self.map.randomize()
         self.init_map()
         self.update()
+        self.draw_keybindings()
 
     def xy_from_event(self, event):
         return event.x // self.tilesize, event.y // self.tilesize
@@ -99,14 +101,14 @@ class MapEditor(tk.Frame):
 
     def canvas_z_event(self, _):
         """Makes the surrounding tiles' edges match the current tile"""
-        if self.x-1 >= 0:
-            self.map.tiles[self.x-1][self.y].e = self.map.tiles[self.x][self.y].w
-        if self.x+1 < self.map.width:
-            self.map.tiles[self.x+1][self.y].w = self.map.tiles[self.x][self.y].e
-        if self.y-1 >= 0:
-            self.map.tiles[self.x][self.y-1].s = self.map.tiles[self.x][self.y].n
-        if self.y+1 < self.map.width:
-            self.map.tiles[self.x][self.y+1].n = self.map.tiles[self.x][self.y].s
+        if self.x - 1 >= 0:
+            self.map.tiles[self.x - 1][self.y].e = self.map.tiles[self.x][self.y].w
+        if self.x + 1 < self.map.width:
+            self.map.tiles[self.x + 1][self.y].w = self.map.tiles[self.x][self.y].e
+        if self.y - 1 >= 0:
+            self.map.tiles[self.x][self.y - 1].s = self.map.tiles[self.x][self.y].n
+        if self.y + 1 < self.map.width:
+            self.map.tiles[self.x][self.y + 1].n = self.map.tiles[self.x][self.y].s
         self.update()
 
     def canvas_c_event(self, _):
@@ -127,36 +129,45 @@ class MapEditor(tk.Frame):
     def canvas_w_event(self, _):
         """Cycle north edge"""
         self.map.tiles[self.x][self.y].n = TileEdge(
-            start_type=self.map.tiles[self.x][self.y].n).next
+            start_type=self.map.tiles[self.x][self.y].n
+        ).next
         self.update()
 
     def canvas_a_event(self, _):
         """Cycle west edge"""
         self.map.tiles[self.x][self.y].w = TileEdge(
-            start_type=self.map.tiles[self.x][self.y].w).next
+            start_type=self.map.tiles[self.x][self.y].w
+        ).next
         self.update()
 
     def canvas_s_event(self, _):
         """Cycle south edge"""
         self.map.tiles[self.x][self.y].s = TileEdge(
-            start_type=self.map.tiles[self.x][self.y].s).next
+            start_type=self.map.tiles[self.x][self.y].s
+        ).next
         self.update()
 
     def canvas_d_event(self, _):
         """Cycle east edge"""
         self.map.tiles[self.x][self.y].e = TileEdge(
-            start_type=self.map.tiles[self.x][self.y].e).next
+            start_type=self.map.tiles[self.x][self.y].e
+        ).next
         self.update()
 
     def canvas_f_event(self, _):
         """Cycle floor"""
         self.map.tiles[self.x][self.y].f = TileFloor(
-            start_type=self.map.tiles[self.x][self.y].f).next
+            start_type=self.map.tiles[self.x][self.y].f
+        ).next
         self.update()
 
     def init_map(self):
-        self.imggrid_tk = [[None for _ in range(self.map_width)]
-                           for _ in range(self.map_height)]
+        self.imggrid_tk = [
+            [None for _ in range(self.map_width)] for _ in range(self.map_height)
+        ]
+
+    def draw_keybindings(self):
+        self.infoblock.create_text(200, 10, text="Keybindings:", font=('Helvetica 15 bold'))
 
     def update(self):
         if self.fix_edges:
@@ -164,7 +175,8 @@ class MapEditor(tk.Frame):
         for w in range(self.map.width):
             for h in range(self.map.height):
                 self.imggrid_tk[w][h] = ImageTk.PhotoImage(
-                    self.map.tiles[w][h].tile_img)
+                    self.map.tiles[w][h].tile_img
+                )
                 self.canvas.create_image(
                     w * self.tilesize,
                     h * self.tilesize,
@@ -180,23 +192,23 @@ class MapEditor(tk.Frame):
 
         self.info_copied = ImageTk.PhotoImage(
             MapTile(self.copy).tile_img.resize(
-                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR))
-        self.infoblock.create_image(20,
-                                    20,
-                                    image=self.info_copied,
-                                    anchor="nw")
+                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
+            )
+        )
+        self.infoblock.create_image(20, 20, image=self.info_copied, anchor="nw")
         self.info_hover = ImageTk.PhotoImage(
             self.map.tiles[self.x][self.y].tile_img.resize(
-                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR))
+                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
+            )
+        )
         self.infoblock.create_image(20, 80, image=self.info_hover, anchor="nw")
 
 
 if __name__ == "__main__":
     root = tk.Tk(className=" ODE Map Editor")
     main = MapEditor(root)
-    main.pack(fill="both",
-              expand=True,
-              pady=main.canvas_padding,
-              padx=main.canvas_padding)
+    main.pack(
+        fill="both", expand=True, pady=main.canvas_padding, padx=main.canvas_padding
+    )
 
     root.mainloop()
