@@ -1,6 +1,6 @@
-# yes I know * imports are bad :-|
-# this is just a testing file
-from ..ode.monsters import *
+from ode.monsters import *
+import json
+from pprint import pprint
 
 
 ################################################################################################################################################
@@ -21,7 +21,7 @@ data_dict = {
             "attackStr": "{monster} {attack_lists.simple} {target} for {damage}.",
         },
         {
-            "weight": 1, 
+            "weight": 5, 
             "damage": "3d3+2",
             "attack": 1,
             "name": "slime2",
@@ -38,8 +38,8 @@ with open(f"{PATH_MONSTERS}slime.json", "w") as outfile:
 creature = Creature(data_dict)
 pprint(creature.to_json)
 
-# for _ in range(20):
-#     print(creature.testing123)
+for _ in range(20):
+    print(creature.testing123)
 
 # exit(0)
 # target = Monster(data)

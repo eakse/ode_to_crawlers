@@ -78,12 +78,12 @@ class Creature(BaseLoader):
 
     @property
     def testing123(self):
-        print(self.select_attack_index)
-        return self.attacks[1].attackStr.format(
+        i = self.select_attack_index
+        return self.attacks[i].attackStr.format(
             monster=self.name,
             target="something",
             attack_lists=ATTACK_LISTS,
-            damage=f"10 damage",
+            damage=f"{roll_dice(self.attacks[i].damage)} damage",
         )
 
     @property

@@ -13,7 +13,7 @@
             "attackStr": "{monster} {attack_lists.simple} {target} for {damage}."
         },
         {
-            "weight": 1,
+            "weight": 5,
             "damage": "3d3+2",
             "attack": 1,
             "name": "slime2",

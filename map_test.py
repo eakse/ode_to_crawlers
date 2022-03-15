@@ -1,6 +1,6 @@
 # yes I know * imports are bad :-|
 # this is just a testing file
-from ..ode.map import *
+from ode.map import *
 import pickle
 import blosc
 
