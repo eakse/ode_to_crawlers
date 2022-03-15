@@ -4,8 +4,6 @@ from ode.map import Map, TileFloor, MapTile, TileEdge
 from ode.ode_constants import *
 import os
 
-print(os.getcwd())
-
 
 class MapEditor(tk.Frame):
 
@@ -175,10 +173,8 @@ class MapEditor(tk.Frame):
                 )
         x0 = (self.x * self.tilesize) - self.hover_boundary - 1
         y0 = (self.y * self.tilesize) - self.hover_boundary - 1
-        x1 = (self.x * self.tilesize) + \
-            self.tilesize + self.hover_boundary
-        y1 = (self.y * self.tilesize) + \
-            self.tilesize + self.hover_boundary
+        x1 = (self.x * self.tilesize) + self.tilesize + self.hover_boundary
+        y1 = (self.y * self.tilesize) + self.tilesize + self.hover_boundary
         self.canvas.create_rectangle(x0, y0, x1, y1, outline=self.hover_color)
         self.hover_delay = 0
 
