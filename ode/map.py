@@ -14,6 +14,7 @@ seed()
 class TileEdge:
     """Simple class to do some simple manipulation of tile edges
     """
+
     def __init__(self, extra_empty=0, start_type=None) -> None:
         self.types = ["none", "wall", "door", "door_hidden"]
         for _ in range(extra_empty):
@@ -43,6 +44,7 @@ class TileEdge:
 class TileFloor:
     """Simple class to do some simple manipulation of floors
     """
+
     def __init__(self, extra_empty=0, start_type="floor") -> None:
         self.types = ["none", "floor"]
         for _ in range(extra_empty):
@@ -69,6 +71,7 @@ class TileFloor:
 class MapImages:
     """Simple container class for the map images.
     """
+
     def __init__(self) -> None:
         self.floor = Image.open(f"{PATH_MAP_IMAGES}map_floor.png")
         self.empty = Image.open(f"{PATH_MAP_IMAGES}map_empty.png")
@@ -83,10 +86,14 @@ class MapImages:
         self.door_s = Image.open(f"{PATH_MAP_IMAGES}map_door_s.png")
         self.door_w = Image.open(f"{PATH_MAP_IMAGES}map_door_w.png")
 
-        self.door_hidden_n = Image.open(f"{PATH_MAP_IMAGES}map_door_hidden_n.png")
-        self.door_hidden_e = Image.open(f"{PATH_MAP_IMAGES}map_door_hidden_e.png")
-        self.door_hidden_s = Image.open(f"{PATH_MAP_IMAGES}map_door_hidden_s.png")
-        self.door_hidden_w = Image.open(f"{PATH_MAP_IMAGES}map_door_hidden_w.png")
+        self.door_hidden_n = Image.open(
+            f"{PATH_MAP_IMAGES}map_door_hidden_n.png")
+        self.door_hidden_e = Image.open(
+            f"{PATH_MAP_IMAGES}map_door_hidden_e.png")
+        self.door_hidden_s = Image.open(
+            f"{PATH_MAP_IMAGES}map_door_hidden_s.png")
+        self.door_hidden_w = Image.open(
+            f"{PATH_MAP_IMAGES}map_door_hidden_w.png")
 
         self.corner_ne = Image.open(f"{PATH_MAP_IMAGES}map_corner_ne.png")
         self.corner_nw = Image.open(f"{PATH_MAP_IMAGES}map_corner_nw.png")
@@ -119,7 +126,8 @@ class MapTile(BaseLoader):
         elif self._n == "door":
             self.tile_img.paste(MAPIMG.door_n, (0, 0), MAPIMG.door_n)
         elif self._n == "door_hidden":
-            self.tile_img.paste(MAPIMG.door_hidden_n, (0, 0), MAPIMG.door_hidden_n)
+            self.tile_img.paste(MAPIMG.door_hidden_n,
+                                (0, 0), MAPIMG.door_hidden_n)
         else:
             self.corner_n = False
 
@@ -132,7 +140,8 @@ class MapTile(BaseLoader):
         elif self._e == "door":
             self.tile_img.paste(MAPIMG.door_e, (0, 0), MAPIMG.door_e)
         elif self._e == "door_hidden":
-            self.tile_img.paste(MAPIMG.door_hidden_e, (0, 0), MAPIMG.door_hidden_e)
+            self.tile_img.paste(MAPIMG.door_hidden_e,
+                                (0, 0), MAPIMG.door_hidden_e)
         else:
             self.corner_e = False
 
@@ -145,7 +154,8 @@ class MapTile(BaseLoader):
         elif self._s == "door":
             self.tile_img.paste(MAPIMG.door_s, (0, 0), MAPIMG.door_s)
         elif self._s == "door_hidden":
-            self.tile_img.paste(MAPIMG.door_hidden_s, (0, 0), MAPIMG.door_hidden_s)
+            self.tile_img.paste(MAPIMG.door_hidden_s,
+                                (0, 0), MAPIMG.door_hidden_s)
         else:
             self.corner_s = False
 
@@ -158,7 +168,8 @@ class MapTile(BaseLoader):
         elif self._w == "door":
             self.tile_img.paste(MAPIMG.door_w, (0, 0), MAPIMG.door_w)
         elif self._w == "door_hidden":
-            self.tile_img.paste(MAPIMG.door_hidden_w, (0, 0), MAPIMG.door_hidden_w)
+            self.tile_img.paste(MAPIMG.door_hidden_w,
+                                (0, 0), MAPIMG.door_hidden_w)
         else:
             self.corner_w = False
 
@@ -298,5 +309,3 @@ class Map(BaseLoader):
     def save(self, filename="test.json"):
         with open(filename, "w") as outfile:
             json.dump(json.loads(str(self.to_json)), outfile, indent=4)
-
-

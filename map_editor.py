@@ -52,7 +52,7 @@ class MapEditor(tk.Frame):
         self.infoblock.grid(row=0, column=1)
         # self.infoblock.pack(padx=self.canvas_padding,pady=self.canvas_padding)
 
-        ### BINDINGS
+        # BINDINGS
         self.canvas.bind("<Button-1>", self.canvas_click_event)
         self.canvas.bind_all("<w>", self.canvas_w_event)
         self.canvas.bind_all("<a>", self.canvas_a_event)
@@ -107,31 +107,36 @@ class MapEditor(tk.Frame):
     def canvas_w_event(self, event):
         """Cycle north edge"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].n = TileEdge(start_type=self.map.tiles[x][y].n).next
+        self.map.tiles[x][y].n = TileEdge(
+            start_type=self.map.tiles[x][y].n).next
         self.update()
 
     def canvas_a_event(self, event):
         """Cycle west edge"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].w = TileEdge(start_type=self.map.tiles[x][y].w).next
+        self.map.tiles[x][y].w = TileEdge(
+            start_type=self.map.tiles[x][y].w).next
         self.update()
 
     def canvas_s_event(self, event):
         """Cycle south edge"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].s = TileEdge(start_type=self.map.tiles[x][y].s).next
+        self.map.tiles[x][y].s = TileEdge(
+            start_type=self.map.tiles[x][y].s).next
         self.update()
 
     def canvas_d_event(self, event):
         """Cycle east edge"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].e = TileEdge(start_type=self.map.tiles[x][y].e).next
+        self.map.tiles[x][y].e = TileEdge(
+            start_type=self.map.tiles[x][y].e).next
         self.update()
 
     def canvas_f_event(self, event):
         """Cycle floor"""
         x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].f = TileFloor(start_type=self.map.tiles[x][y].f).next
+        self.map.tiles[x][y].f = TileFloor(
+            start_type=self.map.tiles[x][y].f).next
         self.update()
 
     def init_map(self):
@@ -155,8 +160,10 @@ class MapEditor(tk.Frame):
                 )
         x0 = (self.hover_x * self.tilesize) - self.hover_boundary - 1
         y0 = (self.hover_y * self.tilesize) - self.hover_boundary - 1
-        x1 = (self.hover_x * self.tilesize) + self.tilesize + self.hover_boundary
-        y1 = (self.hover_y * self.tilesize) + self.tilesize + self.hover_boundary
+        x1 = (self.hover_x * self.tilesize) + \
+            self.tilesize + self.hover_boundary
+        y1 = (self.hover_y * self.tilesize) + \
+            self.tilesize + self.hover_boundary
         self.canvas.create_rectangle(x0, y0, x1, y1, outline=self.hover_color)
         self.hover_delay = 0
 
@@ -165,7 +172,8 @@ class MapEditor(tk.Frame):
                 (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
             )
         )
-        self.infoblock.create_image(20, 20, image=self.info_copied, anchor="nw")
+        self.infoblock.create_image(
+            20, 20, image=self.info_copied, anchor="nw")
         self.info_hover = ImageTk.PhotoImage(
             self.map.tiles[self.hover_x][self.hover_y].tile_img.resize(
                 (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
