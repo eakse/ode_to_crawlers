@@ -44,7 +44,7 @@ class TileFloor:
     """
 
     def __init__(self, extra_empty=0, start_type="floor") -> None:
-        self.types = ["none", "floor"]
+        self.types = ["none", "floor", "solid"]
         for _ in range(extra_empty):
             self.types.insert(0, "none")
         self.index = self.types.index(start_type)
@@ -73,6 +73,7 @@ class MapImages:
     def __init__(self) -> None:
         self.floor = Image.open(f"{PATH_MAP_IMAGES}map_floor.png")
         self.empty = Image.open(f"{PATH_MAP_IMAGES}map_empty.png")
+        self.solid = Image.open(f"{PATH_MAP_IMAGES}map_solid.png")
 
         self.wall_n = Image.open(f"{PATH_MAP_IMAGES}map_wall_n.png")
         self.wall_e = Image.open(f"{PATH_MAP_IMAGES}map_wall_e.png")
@@ -115,6 +116,12 @@ class MapTile(BaseLoader):
         self.tile_img = Image.new("RGBA", (self.tilesize, self.tilesize))
         if self._f == "floor":
             self.tile_img.paste(MAPIMG.floor, (0, 0), MAPIMG.floor)
+        elif self._f == "solid":
+            self.tile_img.paste(MAPIMG.solid, (0, 0), MAPIMG.solid)
+            self._n = "wall"
+            self._e = "wall"
+            self._s = "wall"
+            self._w = "wall"
 
         if not hasattr(self, "corner_n"):
             self.corner_n = True
@@ -171,7 +178,7 @@ class MapTile(BaseLoader):
                                 MAPIMG.door_hidden_w)
         else:
             self.corner_w = False
-
+        
     @property
     def n(self):
         return self._n
@@ -271,6 +278,17 @@ class Map(BaseLoader):
             fix_edges (bool, optional): Set to true to call fix_edges() after randomization. Defaults to True.
         """
         self.tiles = [[MapTile(self.randomtile) for _ in range(self.width)]
+                      for _ in range(self.height)]
+        if fix_edges:
+            self.fix_edges()
+
+    def clear(self, fix_edges=True):
+        """Clears the map.
+
+        Args:
+            fix_edges (bool, optional): Set to true to call fix_edges() after clearing. Defaults to True.
+        """
+        self.tiles = [[MapTile(EMPTY_TILE) for _ in range(self.width)]
                       for _ in range(self.height)]
         if fix_edges:
             self.fix_edges()

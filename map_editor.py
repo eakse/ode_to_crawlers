@@ -16,12 +16,12 @@ class MapEditor(tk.Frame):
         self.map_height = 20
         self.canvas_padding = 5
         self.tilesize = TILESIZE
-        self.hover_x = 0
-        self.hover_y = 0
+        self.x = 0
+        self.y = 0
         self.hover_color = "red"
         self.hover_boundary = 2
-        self.hover_delay = 0
-        self.hover_delay_max = 5
+        self.hover_delay = 100
+        self.hover_delay_waiting = False
         self.fix_edges = True
 
         self.canvas = tk.Canvas(
@@ -62,6 +62,8 @@ class MapEditor(tk.Frame):
         self.canvas.bind_all("<c>", self.canvas_c_event)
         self.canvas.bind_all("<v>", self.canvas_v_event)
         self.canvas.bind_all("<x>", self.canvas_x_event)
+        self.canvas.bind_all("<n>", self.canvas_n_event)
+        self.canvas.bind_all("<z>", self.canvas_z_event)
         self.canvas.bind("<Motion>", self.canvas_motion_event)
 
         self.map = Map(self.map_width, self.map_height)
@@ -73,70 +75,85 @@ class MapEditor(tk.Frame):
         return event.x // self.tilesize, event.y // self.tilesize
 
     def canvas_click_event(self, event):
-        x, y = self.xy_from_event(event)
-        self.map.tiles[x][y] = MapTile(self.map.randomtile)
+        self.map.tiles[self.x][self.y] = MapTile(self.map.randomtile)
         self.update()
 
     def canvas_motion_event(self, event):
         """Sets the coordinates for drawing the hover indicator.
+        These coordinates are also used for the other event functions dealing with the map.
+        There was a mismatch between the hover and the tile where the action was executed on.
         Delay added to increase responsiveness.
         """
-        self.hover_x, self.hover_y = self.xy_from_event(event)
-        self.hover_delay += 1
-        if self.hover_delay == self.hover_delay_max:
-            self.update()
+        self.x, self.y = self.xy_from_event(event)
+        if self.hover_delay_waiting:
+            return
+        self.after(self.hover_delay, self.execute_hover)
+        self.hover_delay_waiting = True
 
-    def canvas_c_event(self, event):
+    def execute_hover(self):
+        self.hover_delay_waiting = False
+        self.update()
+
+    def canvas_n_event(self, _):
+        """Clear map"""
+        self.map.clear()
+        self.update()
+
+    def canvas_z_event(self, _):
+        """Makes the surrounding tiles' edges match the current tile"""
+        if self.x-1 >= 0:
+            self.map.tiles[self.x-1][self.y].e = self.map.tiles[self.x][self.y].w
+        if self.x+1 < self.map.width:
+            self.map.tiles[self.x+1][self.y].w = self.map.tiles[self.x][self.y].e
+        if self.y-1 >= 0:
+            self.map.tiles[self.x][self.y-1].s = self.map.tiles[self.x][self.y].n
+        if self.y+1 < self.map.width:
+            self.map.tiles[self.x][self.y+1].n = self.map.tiles[self.x][self.y].s
+        self.update()
+
+    def canvas_c_event(self, _):
         """Copy current tile"""
-        x, y = self.xy_from_event(event)
-        self.copy = self.map.tiles[x][y].to_json
+        self.copy = self.map.tiles[self.x][self.y].to_json
         self.update()
 
-    def canvas_v_event(self, event):
+    def canvas_v_event(self, _):
         """Paste previously copied tile. (defaults to ode.ode_constants.EMPTY_TILE)"""
-        x, y = self.xy_from_event(event)
-        self.map.tiles[x][y] = MapTile(self.copy)
+        self.map.tiles[self.x][self.y] = MapTile(self.copy)
         self.update()
 
-    def canvas_x_event(self, event):
+    def canvas_x_event(self, _):
         """Paste ode.ode_constants.EMPTY_TILE (in other words, delete)"""
-        x, y = self.xy_from_event(event)
-        self.map.tiles[x][y] = MapTile(EMPTY_TILE)
+        self.map.tiles[self.x][self.y] = MapTile(EMPTY_TILE)
         self.update()
 
-    def canvas_w_event(self, event):
+    def canvas_w_event(self, _):
         """Cycle north edge"""
-        x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].n = TileEdge(
-            start_type=self.map.tiles[x][y].n).next
+        self.map.tiles[self.x][self.y].n = TileEdge(
+            start_type=self.map.tiles[self.x][self.y].n).next
         self.update()
 
-    def canvas_a_event(self, event):
+    def canvas_a_event(self, _):
         """Cycle west edge"""
-        x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].w = TileEdge(
-            start_type=self.map.tiles[x][y].w).next
+        self.map.tiles[self.x][self.y].w = TileEdge(
+            start_type=self.map.tiles[self.x][self.y].w).next
         self.update()
 
-    def canvas_s_event(self, event):
+    def canvas_s_event(self, _):
         """Cycle south edge"""
-        x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].s = TileEdge(
-            start_type=self.map.tiles[x][y].s).next
+        self.map.tiles[self.x][self.y].s = TileEdge(
+            start_type=self.map.tiles[self.x][self.y].s).next
         self.update()
 
-    def canvas_d_event(self, event):
+    def canvas_d_event(self, _):
         """Cycle east edge"""
-        x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].e = TileEdge(
-            start_type=self.map.tiles[x][y].e).next
+        self.map.tiles[self.x][self.y].e = TileEdge(
+            start_type=self.map.tiles[self.x][self.y].e).next
         self.update()
 
-    def canvas_f_event(self, event):
+    def canvas_f_event(self, _):
         """Cycle floor"""
-        x, y = self.xy_from_event(event)
-        self.map.tiles[x][y].f = TileFloor(
-            start_type=self.map.tiles[x][y].f).next
+        self.map.tiles[self.x][self.y].f = TileFloor(
+            start_type=self.map.tiles[self.x][self.y].f).next
         self.update()
 
     def init_map(self):
@@ -156,11 +173,11 @@ class MapEditor(tk.Frame):
                     image=self.imggrid_tk[w][h],
                     anchor="nw",
                 )
-        x0 = (self.hover_x * self.tilesize) - self.hover_boundary - 1
-        y0 = (self.hover_y * self.tilesize) - self.hover_boundary - 1
-        x1 = (self.hover_x * self.tilesize) + \
+        x0 = (self.x * self.tilesize) - self.hover_boundary - 1
+        y0 = (self.y * self.tilesize) - self.hover_boundary - 1
+        x1 = (self.x * self.tilesize) + \
             self.tilesize + self.hover_boundary
-        y1 = (self.hover_y * self.tilesize) + \
+        y1 = (self.y * self.tilesize) + \
             self.tilesize + self.hover_boundary
         self.canvas.create_rectangle(x0, y0, x1, y1, outline=self.hover_color)
         self.hover_delay = 0
@@ -173,7 +190,7 @@ class MapEditor(tk.Frame):
                                     image=self.info_copied,
                                     anchor="nw")
         self.info_hover = ImageTk.PhotoImage(
-            self.map.tiles[self.hover_x][self.hover_y].tile_img.resize(
+            self.map.tiles[self.x][self.y].tile_img.resize(
                 (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR))
         self.infoblock.create_image(20, 80, image=self.info_hover, anchor="nw")
 
