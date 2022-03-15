@@ -238,27 +238,6 @@ class MapTile(BaseLoader):
         ):
             self.tile_img.paste(mapimg.corner_sw, (0, 0), mapimg.corner_sw)
 
-    # def __str__(self) -> str:
-    #     """Turns the BaseLoader object into a valid JSON string
-    #     Has logic to deal with nested BaseLoader objects, both dicts and lists
-
-    #     Returns:
-    #         str: valid JSON string
-    #     """
-    #     result = {}
-    #     for key, value in self.__dict__.items():
-    #         if type(value) != Image.Image:
-    #             result[key] = value
-
-    #     return json.dumps(result)
-
-    # def __repr__(self) -> str:
-    #     return self.__str__()
-
-    # @property
-    # def to_json(self) -> dict:
-    #     return json.loads(self.__str__())
-
 
 class Map(BaseLoader):
     def __init__(self, width: int = 50, height: int = 50) -> None:
@@ -272,21 +251,28 @@ class Map(BaseLoader):
     def to_json(self) -> dict:
         return self.tiles
 
-    def randomize(self):
+    def randomize(self, fix_edges=True):
+        """Randomizes the map.
+
+        Args:
+            fix_edges (bool, optional): Set to true to call fix_edges() after randomization. Defaults to True.
+        """
         self.tiles = [
             [MapTile(self.randomtile) for _ in range(self.width)]
             for _ in range(self.height)
         ]
+        if fix_edges:
+            self.fix_edges()
 
     def fix_edges(self):
+        """Makes sure the edges of the map have walls.
+        """
         for y in range(self.height):
             self.tiles[0][y].w = "wall"
             self.tiles[-1][y].e = "wall"
         for x in range(self.width):
             self.tiles[x][0].n = "wall"
             self.tiles[x][-1].s = "wall"
-
-
 
     @property
     def randomtile(self):

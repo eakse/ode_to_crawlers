@@ -22,6 +22,8 @@ class MapEditor(tk.Frame):
         self.hover_boundary = 2
         self.hover_delay = 0
         self.hover_delay_max = 5
+        self.fix_edges = False
+
         self.canvas = tk.Canvas(
             self,
             width=self.map_width * self.tilesize,
@@ -76,6 +78,9 @@ class MapEditor(tk.Frame):
         self.update()
 
     def canvas_motion_event(self, event):
+        """Sets the coordinates for drawing the hover indicator.
+        Delay added to increase responsiveness.
+        """
         self.hover_x, self.hover_y = self.xy_from_event(event)
         self.hover_delay += 1
         if self.hover_delay == self.hover_delay_max:
@@ -135,7 +140,8 @@ class MapEditor(tk.Frame):
         ]
 
     def update(self):
-        self.map.fix_edges()
+        if self.fix_edges:
+            self.map.fix_edges()
         for w in range(self.map.width):
             for h in range(self.map.height):
                 self.imggrid_tk[w][h] = ImageTk.PhotoImage(
@@ -154,16 +160,22 @@ class MapEditor(tk.Frame):
         self.canvas.create_rectangle(x0, y0, x1, y1, outline=self.hover_color)
         self.hover_delay = 0
 
-        self.info_copied = ImageTk.PhotoImage(MapTile(self.copy).tile_img.resize((self.tilesize*2, self.tilesize*2), Image.BILINEAR))
+        self.info_copied = ImageTk.PhotoImage(
+            MapTile(self.copy).tile_img.resize(
+                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
+            )
+        )
         self.infoblock.create_image(20, 20, image=self.info_copied, anchor="nw")
-        self.info_hover = ImageTk.PhotoImage(self.map.tiles[self.hover_x][self.hover_y].tile_img.resize((self.tilesize*2, self.tilesize*2), Image.BILINEAR))
+        self.info_hover = ImageTk.PhotoImage(
+            self.map.tiles[self.hover_x][self.hover_y].tile_img.resize(
+                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
+            )
+        )
         self.infoblock.create_image(20, 80, image=self.info_hover, anchor="nw")
 
 
 if __name__ == "__main__":
     root = tk.Tk(className=" ODE Map Editor")
-    # root.geometry("1600×900")
-
     main = MapEditor(root)
     main.pack(
         fill="both", expand=True, pady=main.canvas_padding, padx=main.canvas_padding
