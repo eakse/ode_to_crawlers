@@ -22,7 +22,7 @@ class MapEditor(tk.Frame):
         self.hover_boundary = 2
         self.hover_delay = 0
         self.hover_delay_max = 5
-        self.fix_edges = False
+        self.fix_edges = True
 
         self.canvas = tk.Canvas(
             self,
