@@ -1,9 +1,22 @@
 import os
-from .constants import *
+from ode.constants import *
 from random import randint
 import json
 from PIL import Image
+from time import time
 
+
+def timer(func):
+    '''Decorator that reports the execution time.'''
+    def wrap(*args, **kwargs):
+        start = time()
+        # print(f"start: {start}")
+        result = func(*args, **kwargs)
+        end = time()
+        # print(f"end:   {end}")
+        print(f"diff:  {end-start}")
+        return result
+    return wrap
 
 class BaseLoader(object):
     """Base class from which most other classes inherit from.

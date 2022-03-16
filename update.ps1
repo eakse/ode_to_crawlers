@@ -14,5 +14,5 @@ pip install -r .\requirements.txt
 # [System.IO.File]::WriteAllText($setupPyPath, $contents)
 
 git add *
-git commit -m "$(Get-Date -Format G)"
+git commit -m "Automated push done on/at $(Get-Date -Format G)"
 git push

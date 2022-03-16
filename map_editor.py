@@ -2,8 +2,9 @@ import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox as mb
 from PIL import Image, ImageTk
-from ode.map import Map, TileFloorRandomizer, MapTile, TileEdgeRandomizer
+from ode.map import Map, TileEdge, TileFloorRandomizer, MapTile, TileEdgeRandomizer
 from ode.constants import *
+from ode.util import timer
 from pprint import pprint
 import gc
 
@@ -27,16 +28,17 @@ class MapEditor(tk.Frame):
         super(MapEditor, self).__init__(parent)
         self.menubar = MenuBar(self)
         parent.config(menu=self.menubar)
-        self.copy = dict(EMPTY_TILE)
         self.map_width = 20
         self.map_height = 20
         self.canvas_padding = 5
         self.tilesize = TILESIZE
         self.x = 0
         self.y = 0
+        self.copy = MapTile()
         self.hover_color = "red"
         self.hover_boundary = 2
         self.hover_delay = 100
+        self.hover_delay_room = 500
         self.hover_delay_waiting = False
         self.fix_edges = True
         self.paint_list = ()
@@ -145,7 +147,7 @@ class MapEditor(tk.Frame):
 
         self.map = Map(self.map_width, self.map_height)
         self.map.randomize()
-        self.map = Map.load_blosc("C:/###VS Projects/ode_to_crawlers/data/maps/1.map")
+        # self.map = Map.load_blosc("C:/###VS Projects/ode_to_crawlers/data/maps/1.map")
         self.init_map()
         self.update()
         self.draw_keybindings()
@@ -219,51 +221,51 @@ class MapEditor(tk.Frame):
 
     def copy_tile(self, _):
         """Copy current tile"""
-        self.copy = dict(self.map.tiles[self.x][self.y].to_json)
+        self.copy = MapTile(**self.map.tiles[self.x][self.y].dump)
         self.update(adjust=False)
 
     def paste_tile(self, _):
         """Paste previously copied tile. (defaults to ode.ode_constants.EMPTY_TILE)"""
-        self.map.tiles[self.x][self.y] = MapTile(self.copy)
+        self.map.tiles[self.x][self.y] = MapTile(**self.copy.dump)
         self.update()
 
     def clear_tile(self, _):
         """Paste ode.ode_constants.EMPTY_TILE (in other words, delete)"""
-        self.map.tiles[self.x][self.y] = MapTile(EMPTY_TILE)
+        self.map.tiles[self.x][self.y] = MapTile()
         self.update()
 
     def cycle_north(self, _):
         """Cycle north edge"""
-        self.map.tiles[self.x][self.y].n = TileEdgeRandomizer(
-            start_type=self.map.tiles[self.x][self.y].n
+        self.map.tiles[self.x][self.y].n.style = TileEdgeRandomizer(
+            start_type=self.map.tiles[self.x][self.y].n.style
         ).next
         self.update()
 
     def cycle_west(self, _):
         """Cycle west edge"""
-        self.map.tiles[self.x][self.y].w = TileEdgeRandomizer(
-            start_type=self.map.tiles[self.x][self.y].w
+        self.map.tiles[self.x][self.y].w.style = TileEdgeRandomizer(
+            start_type=self.map.tiles[self.x][self.y].w.style
         ).next
         self.update()
 
     def cycle_south(self, _):
         """Cycle south edge"""
-        self.map.tiles[self.x][self.y].s = TileEdgeRandomizer(
-            start_type=self.map.tiles[self.x][self.y].s
+        self.map.tiles[self.x][self.y].s.style = TileEdgeRandomizer(
+            start_type=self.map.tiles[self.x][self.y].s.style
         ).next
         self.update()
 
     def cycle_east(self, _):
         """Cycle east edge"""
-        self.map.tiles[self.x][self.y].e = TileEdgeRandomizer(
-            start_type=self.map.tiles[self.x][self.y].e
+        self.map.tiles[self.x][self.y].e.style = TileEdgeRandomizer(
+            start_type=self.map.tiles[self.x][self.y].e.style
         ).next
         self.update()
 
     def cycle_floor(self, _):
         """Cycle floor"""
-        self.map.tiles[self.x][self.y].f = TileFloorRandomizer(
-            start_type=self.map.tiles[self.x][self.y].f
+        self.map.tiles[self.x][self.y].f.style = TileFloorRandomizer(
+            start_type=self.map.tiles[self.x][self.y].f.style
         ).next
         self.update()
 
@@ -286,7 +288,7 @@ class MapEditor(tk.Frame):
             )
 
     def draw_tile(self, x, y):
-        self.imggrid_tk[x][y] = ImageTk.PhotoImage(self.map.tiles[x][y].tile_img)
+        self.imggrid_tk[x][y] = ImageTk.PhotoImage(self.map.tiles[x][y].image)
         self.canvas.create_image(
             x * self.tilesize,
             y * self.tilesize,
@@ -294,12 +296,15 @@ class MapEditor(tk.Frame):
             anchor="nw",
         )
 
+    # @timer
     def draw_room_outline(self, room):
         # self.gc_counter += 1
         # if self.gc_counter == 100:
         #     print("collect")
         #     self.gc_counter = 0
         #     gc.collect(2)
+        room = self.map.get_room((self.x, self.y), [])
+        
         for coords in room:
             x, y = coords
             if self.map.tiles[x][y]._n != "none":
@@ -338,7 +343,7 @@ class MapEditor(tk.Frame):
             self.draw_tile(*coords)
 
     def update(self, adjust=True):
-        self.label_hover_details_text.set(self.map.tiles[self.x][self.y].pretty_text)
+        # self.label_hover_details_text.set(self.map.tiles[self.x][self.y].pretty_text)
         if self.fix_edges:
             self.map.fix_edges()
         if adjust and self.auto_adjust.get():
@@ -346,7 +351,12 @@ class MapEditor(tk.Frame):
         for w in range(self.map.width):
             for h in range(self.map.height):
                 self.draw_tile(w, h)
-        self.paint_list = self.map.get_room((self.x, self.y), [])
+        # self.paint_list = self.map.get_room((self.x, self.y), [])
+        self.info_copied = ImageTk.PhotoImage(
+            self.copy.image.resize(
+                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
+            )
+        )
         self.draw_room_outline(self.paint_list)
 
         x0 = (self.x * self.tilesize) - self.hover_boundary - 1
@@ -355,15 +365,11 @@ class MapEditor(tk.Frame):
         y1 = (self.y * self.tilesize) + self.tilesize + self.hover_boundary
         self.canvas.create_rectangle(x0, y0, x1, y1, outline=self.hover_color)
         self.hover_delay = 0
+        self.hover_delay_waiting = False
 
-        self.info_copied = ImageTk.PhotoImage(
-            MapTile(self.copy).tile_img.resize(
-                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
-            )
-        )
         self.infoblock.create_image(20, 20, image=self.info_copied, anchor="nw")
         self.info_hover = ImageTk.PhotoImage(
-            self.map.tiles[self.x][self.y].tile_img.resize(
+            self.map.tiles[self.x][self.y].image.resize(
                 (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
             )
         )

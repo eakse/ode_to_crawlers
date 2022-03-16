@@ -9,20 +9,21 @@ import blosc
 ### TESTING
 
 
-tile = MapTile(n={"style":"wall"}, e="door", w="door_hidden", s="wall")
+tile = MapTile.random(floor_random=True)
 print(tile.dump)
 
 
-tile.image.show()
+# tile.image.show()
 
 
+tile_edge = TileEdge.random(TileEdge.EDGE_LIST)
+print(tile_edge.dump)
 exit(0)
-tile_edge = TileEdge()
-print(tile_edge.EDGE_LIST_VISIBLE_DEV)
 print(tile_edge.EDGE_LIST_VISIBLE)
 print(tile_edge.dump)
 tile_edge.style = "wall"
 print(tile_edge.dump)
+print(type(tile_edge))
 
 tile_edge2 = TileEdge(style="door")
 print(tile_edge2.dumps(indent=4))
@@ -31,6 +32,7 @@ print(tile_edge, str(tile_edge2))
 
 floor1 = TileFloor()
 print(floor1)
+exit(0)
 
 
 tile_data1 = {
