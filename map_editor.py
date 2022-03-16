@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox as mb
 from PIL import Image, ImageTk
-from ode.map import Map, TileFloor, MapTile, TileEdge
-from ode.ode_constants import *
+from ode.map import Map, TileFloorRandomizer, MapTile, TileEdgeRandomizer
+from ode.constants import *
 from pprint import pprint
 import gc
 
@@ -234,35 +234,35 @@ class MapEditor(tk.Frame):
 
     def cycle_north(self, _):
         """Cycle north edge"""
-        self.map.tiles[self.x][self.y].n = TileEdge(
+        self.map.tiles[self.x][self.y].n = TileEdgeRandomizer(
             start_type=self.map.tiles[self.x][self.y].n
         ).next
         self.update()
 
     def cycle_west(self, _):
         """Cycle west edge"""
-        self.map.tiles[self.x][self.y].w = TileEdge(
+        self.map.tiles[self.x][self.y].w = TileEdgeRandomizer(
             start_type=self.map.tiles[self.x][self.y].w
         ).next
         self.update()
 
     def cycle_south(self, _):
         """Cycle south edge"""
-        self.map.tiles[self.x][self.y].s = TileEdge(
+        self.map.tiles[self.x][self.y].s = TileEdgeRandomizer(
             start_type=self.map.tiles[self.x][self.y].s
         ).next
         self.update()
 
     def cycle_east(self, _):
         """Cycle east edge"""
-        self.map.tiles[self.x][self.y].e = TileEdge(
+        self.map.tiles[self.x][self.y].e = TileEdgeRandomizer(
             start_type=self.map.tiles[self.x][self.y].e
         ).next
         self.update()
 
     def cycle_floor(self, _):
         """Cycle floor"""
-        self.map.tiles[self.x][self.y].f = TileFloor(
+        self.map.tiles[self.x][self.y].f = TileFloorRandomizer(
             start_type=self.map.tiles[self.x][self.y].f
         ).next
         self.update()

@@ -1,4 +1,4 @@
-from .ode_constants import *
+from .constants import *
 from .util import get_files_from_path, roll_dice, BaseLoader
 from random import randint, seed
 import os

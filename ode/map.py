@@ -1,6 +1,6 @@
 from time import time
-from .ode_constants import *
-from .util import BaseLoader
+from ode.constants import *
+from ode.util import BaseLoader
 from PIL import Image
 from random import randint, seed
 import json
@@ -11,14 +11,172 @@ import pickle
 
 seed()
 
+class TileBase:
+    ##### POSSIBLE EDGE STYLES
+    NONE = "none"
+    WALL = "wall"
+    DOOR = "door"
+    DOOR_HIDDEN = "door_hidden"
+    SEPA_INV = "sepa_inv"
 
-class TileEdge:
+    ##### LISTS FOR EDGES
+    EDGE_LIST = [NONE, WALL, DOOR, DOOR_HIDDEN, SEPA_INV]
+    EDGE_LIST_VISIBLE = [NONE, WALL, DOOR, DOOR_HIDDEN]
+    EDGE_LIST_VISIBLE_DEV = [NONE, WALL, DOOR, DOOR_HIDDEN, SEPA_INV]
+    EDGE_LIST_SOLID = [WALL, DOOR, DOOR_HIDDEN]
+    EDGE_LIST_PASSABLE = [NONE, DOOR, DOOR_HIDDEN, SEPA_INV]
+
+    ##### POSSIBLE FLOOR STYLES
+    FLOOR = "floor"
+    PIT = "pit"
+    STAIRS_UP = "stairs_up"
+    STAIRS_DOWN = "stairs_down"
+    TELEPORTER = "teleporter"
+    SOLID = "solid"
+
+    ##### LISTS FOR FLOORS
+    FLOOR_LIST = [FLOOR, PIT, STAIRS_UP, STAIRS_DOWN, TELEPORTER, SOLID, NONE]
+    FLOOR_LIST_SIMPLE = [FLOOR, SOLID, NONE]
+    FLOOR_LIST_VISIBLE = [FLOOR, PIT, STAIRS_UP, STAIRS_DOWN, TELEPORTER, SOLID, NONE]
+    FLOOR_LIST_VISIBLE_DEV = [FLOOR, PIT, STAIRS_UP, STAIRS_DOWN, TELEPORTER, SOLID, NONE]
+    FLOOR_LIST_SOLID = [SOLID]
+    FLOOR_LIST_PASSABLE = [FLOOR, PIT, STAIRS_UP, STAIRS_DOWN, TELEPORTER, NONE]
+    FLOOR_LIST_PASSABLE_WARN = [PIT, TELEPORTER, NONE]
+    
+    ORI_N = "_n"
+    ORI_E = "_e"
+    ORI_S = "_s"
+    ORI_W = "_w"
+    ORI_LIST = [ORI_N, ORI_E, ORI_S, ORI_W]
+
+    DUMP_EXCLUDE_LIST = ['_dev_mode']
+
+    def __init__(self, dev_mode=False, **kwargs):
+        if not hasattr(self, "style"):
+            self._style = self.NONE
+        if hasattr(self, "dev_mode"):
+            self._dev_mode = self.dev_mode or dev_mode
+        else:
+            self._dev_mode = dev_mode
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+    
+    def __repr__(self) -> str:
+        return self.dumps()
+
+    def __str__(self) -> str:
+        return self.dumps()
+
+    @property
+    def dev_mode(self) -> bool:
+        return self._dev_mode
+    
+    @dev_mode.setter
+    def dev_mode(self, value: bool) -> bool:
+        self._dev_mode = value
+        return value
+
+    @property
+    def dump(self) -> dict:
+        result = {}
+        for key, value in self.__dict__.items():
+            if key.startswith("_") and not key.startswith("__") and key not in self.DUMP_EXCLUDE_LIST:
+                result[key[1:]] = value
+        return result
+
+    def dumps(self, **kwargs) -> str:
+        return json.dumps(self.dump, **kwargs)
+    
+
+class TileEdge(TileBase):
+    def __init__(self, dev_mode=False, **kwargs):
+        super().__init__(dev_mode, **kwargs)
+
+    @property
+    def style(self) -> str:
+        if self._style not in self.EDGE_LIST:
+            self._style = self.NONE
+        return self._style
+
+    @style.setter
+    def style(self, value: str) -> bool:
+        if value in self.EDGE_LIST:
+            self._style = value
+            return True
+        return False
+
+    @property
+    def visible(self) -> bool:
+        if self._dev_mode:
+            return self._style in self.EDGE_LIST_VISIBLE_DEV
+        else:
+            return self._style in self.EDGE_LIST_VISIBLE
+
+    @property
+    def solid(self) -> bool:
+        return self._style in self.EDGE_LIST_SOLID
+
+    @property
+    def passable(self) -> bool:
+        return self._style in self.EDGE_LIST_PASSABLE
+
+    @property
+    def filename(self) -> str:
+        return f"{PATH_IMAGES_EDGE}{self._style}.png"
+
+
+class TileFloor(TileBase):
+    def __init__(self, dev_mode=False, **kwargs):
+        # check because new tiles should start with floor instead of none
+        if "style" not in kwargs.keys():
+            kwargs["style"] = TileBase.FLOOR
+        super().__init__(dev_mode, **kwargs)
+
+    @property
+    def style(self) -> str:
+        if self._style not in self.FLOOR_LIST:
+            self._style = self.FLOOR
+        return self._style
+
+    @style.setter
+    def style(self, value: str) -> bool:
+        if value in self.FLOOR_LIST:
+            self._style = value
+            return True
+        return False
+
+    @property
+    def visible(self) -> bool:
+        if self._dev_mode:
+            return self._style in self.FLOOR_LIST_VISIBLE_DEV
+        else:
+            return self._style in self.FLOOR_LIST_VISIBLE
+
+    @property
+    def solid(self) -> bool:
+        return self._style in self.FLOOR_LIST_SOLID
+
+    @property
+    def passable(self) -> bool:
+        return self._style in self.FLOOR_LIST_PASSABLE
+
+    @property
+    def passable_warn(self) -> bool:
+        return self._style in self.FLOOR_LIST_PASSABLE_WARN
+
+    @property
+    def filename(self) -> str:
+        return f"{PATH_IMAGES_FLOOR}{self._style}.png"
+
+
+class TileEdgeRandomizer:
     """Simple class to do some simple manipulation of tile edges"""
 
     def __init__(self, extra_empty=0, start_type=None) -> None:
-        self.types = ["none", "wall", "door", "door_hidden"]
+        self.types = TileEdge.EDGE_LIST
         for _ in range(extra_empty):
-            self.types.insert(0, "none")
+            self.types.insert(0, TileEdge.NONE)
         if start_type:
             self.index = self.types.index(start_type)
         else:
@@ -41,13 +199,15 @@ class TileEdge:
         return self.current
 
 
-class TileFloor:
+class TileFloorRandomizer:
     """Simple class to do some simple manipulation of floors"""
 
-    def __init__(self, extra_empty=0, start_type="floor") -> None:
-        self.types = ["none", "floor", "solid"]
+    def __init__(self, extra_empty=0, extra_floor=0, start_type=TileBase.FLOOR) -> None:
+        self.types = TileBase.FLOOR_LIST_SIMPLE
         for _ in range(extra_empty):
-            self.types.insert(0, "none")
+            self.types.insert(0, TileBase.NONE)
+        for _ in range(extra_floor):
+            self.types.insert(0, TileBase.FLOOR)
         self.index = self.types.index(start_type)
 
     @property
@@ -100,7 +260,126 @@ class MapImages:
 MAPIMG = MapImages()
 
 
-class MapTile(BaseLoader):
+class MapTile:
+    DUMP_EXCLUDE_LIST = ['_dev_mode', '_image']
+
+    def __init__(self, dev_mode=False, **kwargs):
+        if hasattr(self, "dev_mode"):
+            self._dev_mode = self.dev_mode or dev_mode
+        else:
+            self._dev_mode = dev_mode
+        
+        for edge in ["n", "e", "s", "w"]:
+            if not hasattr(self, edge):
+                if edge in kwargs.keys():
+                    if type(kwargs[edge]) == str:
+                        setattr(self, f"_{edge}", TileEdge(style=kwargs[edge]))
+                    else:
+                        setattr(self, f"_{edge}", TileEdge(**kwargs[edge]))
+                else:
+                    setattr(self, f"_{edge}",  TileEdge())
+
+        # TODO: add roof
+        for floor in ["f"]:
+            if not hasattr(self, floor):
+                if floor in kwargs.keys():
+                    if type(kwargs[floor]) == str:
+                        setattr(self, f"_{floor}", TileFloor(style=kwargs[floor]))
+                    else:
+                        setattr(self, f"_{floor}", TileFloor(**kwargs[floor]))
+                else:
+                    setattr(self, f"_{floor}",  TileFloor())
+
+    @property
+    def dev_mode(self) -> bool:
+        return self._dev_mode
+
+    @dev_mode.setter
+    def dev_mode(self, value: bool) -> bool:
+        self._dev_mode = value
+        return value
+
+    @property
+    def image(self) -> Image:
+        __image = Image.open(self._f.filename)
+        __paste = Image.open(self._n.filename)
+        __image.paste(__paste, (0, 0), __paste)
+        __paste = Image.open(self._e.filename).transpose(Image.ROTATE_270)
+        __image.paste(__paste, (TILESIZE-2, 0), __paste)
+        __paste = Image.open(self._s.filename).transpose(Image.ROTATE_180)
+        __image.paste(__paste, (20,0), __paste)
+        __paste = Image.open(self._w.filename).transpose(Image.ROTATE_90)
+        __image.paste(__paste, (0, 0), __paste)
+        return __image
+
+
+    @property
+    def dump(self) -> dict:
+        result = {}
+        for key, value in self.__dict__.items():
+            if key.startswith("_") and not key.startswith("__") and key not in self.DUMP_EXCLUDE_LIST:
+                if type(value) == TileEdge or type(value) == TileFloor:
+                    result[key[1:]] = value.dump
+                else:
+                    result[key[1:]] = value
+        return result
+
+    def dumps(self, **kwargs) -> str:
+        return json.dumps(self.dump, **kwargs)
+
+    @property
+    def n(self) -> TileEdge:
+        return self._n
+    
+    @n.setter
+    def n(self, value: str) -> bool:
+        if value in TileEdge.EDGE_LIST:
+            self._n = self._n.style(value)
+        return value in TileEdge.EDGE_LIST
+
+    @property
+    def e(self) -> TileEdge:
+        return self._e
+    
+    @e.setter
+    def e(self, value: str) -> bool:
+        if value in TileEdge.EDGE_LIST:
+            self._e = self._e.style(value)
+        return value in TileEdge.EDGE_LIST
+        
+    @property
+    def s(self) -> TileEdge:
+        return self._s
+    
+    @s.setter
+    def s(self, value: str) -> bool:
+        if value in TileEdge.EDGE_LIST:
+            self._s = self._s.style(value)
+        return value in TileEdge.EDGE_LIST
+        
+    @property
+    def w(self) -> TileEdge:
+        return self._w
+    
+    @w.setter
+    def w(self, value: str) -> bool:
+        if value in TileEdge.EDGE_LIST:
+            self._w = self._w.style(value)
+        return value in TileEdge.EDGE_LIST
+        
+    @property
+    def f(self) -> TileFloor:
+        return self._f
+    
+    @f.setter
+    def f(self, value: str) -> bool:
+        if value in TileFloor.FLOOR_LIST:
+            self._f = self._f.style(value)
+        return value in TileFloor.FLOOR_LIST
+        
+
+
+class MapTile_old(BaseLoader):
     def __init__(self, data=None):
         super().__init__(data)
         self.tilesize = TILESIZE
@@ -364,7 +643,7 @@ class Map(BaseLoader):
 
     @property
     def randomtile(self):
-        edge = TileEdge(extra_empty=2)
+        edge = TileEdgeRandomizer(extra_empty=2)
         return {
             "_n": edge.random,
             "_e": edge.random,

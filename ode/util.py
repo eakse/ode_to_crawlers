@@ -1,5 +1,5 @@
 import os
-from .ode_constants import *
+from .constants import *
 from random import randint
 import json
 from PIL import Image
