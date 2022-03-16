@@ -65,7 +65,5 @@ with open("testmap.blosc", "wb") as outfile:
     outfile.write(blosc.compress(pickle.dumps(map)))
     # json.dump(str(map.to_json), outfile, indent=4)
 
-for image in MAPIMG:
-    pass
 
 print(tile1.to_json)

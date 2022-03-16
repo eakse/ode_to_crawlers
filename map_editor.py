@@ -83,6 +83,20 @@ class MapEditor(tk.Frame):
             y=self.key_list_y - 20,
         )
 
+        self.draw_room_bool = tk.BooleanVar()
+        self.draw_room_cb = tk.Checkbutton(
+            parent,
+            text="Draw room outline",
+            **self.label_dict,
+            variable=self.draw_room_bool,
+            onvalue=True,
+            offvalue=False,
+        )
+        self.draw_room_cb.place(
+            x=((self.map_width * TILESIZE) + (self.canvas_padding * 2)),
+            y=self.key_list_y - 40,
+        )
+        
         self.canvas = tk.Canvas(
             self,
             width=self.map_width * self.tilesize,
@@ -302,6 +316,8 @@ class MapEditor(tk.Frame):
         #     print("collect")
         #     self.gc_counter = 0
         #     gc.collect(2)
+        if not self.draw_room_bool:
+            return
         room = self.map.get_room((self.x, self.y), [])
 
         for coords in room:
