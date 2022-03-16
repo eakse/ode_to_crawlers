@@ -5,6 +5,7 @@ from PIL import Image, ImageTk
 from ode.map import Map, TileFloor, MapTile, TileEdge
 from ode.ode_constants import *
 from pprint import pprint
+import gc
 
 
 class MenuBar(tk.Menu):
@@ -38,6 +39,12 @@ class MapEditor(tk.Frame):
         self.hover_delay = 100
         self.hover_delay_waiting = False
         self.fix_edges = True
+        self.paint_list = ()
+        self.line_settings = {
+            "fill": "yellow",
+            "dash": (2, 2)
+        }
+        self.gc_counter = 0
 
         self.text_dict = {"font": ("Consolas 8"), "fill": "black", "anchor": "nw"}
         self.label_dict = {"font": ("Consolas 8"), "anchor": "nw", "bg": "white"}
@@ -182,52 +189,7 @@ class MapEditor(tk.Frame):
         self.update()
 
     def canvas_click_right_event(self, _):
-        self.paint_list = self.map.get_room((self.x, self.y), [])
-        for item in self.paint_list:
-            x, y = item
-            if self.map.tiles[x][y]._n != "none":
-                self.canvas.create_line(
-                    x *       self.tilesize -2,
-                    y *       self.tilesize -2,
-                    (x + 1) * self.tilesize +2,
-                    y *        self.tilesize-2,
-                    fill="yellow",
-                    dash=(2, 2)
-                )
-            if self.map.tiles[x][y]._s != "none":
-                self.canvas.create_line(
-                    x *       self.tilesize -2,
-                    (y + 1) * self.tilesize +2,
-                    (x + 1) * self.tilesize +2,
-                    (y + 1) * self.tilesize +2,
-                    fill="yellow",
-                    dash=(2, 2)
-                )
-            if self.map.tiles[x][y]._e != "none":
-                self.canvas.create_line(
-                    (x + 1) * self.tilesize +2,
-                    y *       self.tilesize -2,
-                    (x + 1) * self.tilesize +2,
-                    (y + 1) * self.tilesize +2,
-                    fill="yellow",
-                    dash=(2, 2)
-                )
-            if self.map.tiles[x][y]._w != "none":
-                self.canvas.create_line(
-                    x *       self.tilesize -2,
-                    y *       self.tilesize -2,
-                    x *       self.tilesize -2,
-                    (y + 1) * self.tilesize +2,
-                    fill="yellow",
-                    dash=(2, 2)
-                )
-            # self.canvas.create_rectangle(
-            #     x * self.tilesize,
-            #     y * self.tilesize,
-            #     (x + 1) * self.tilesize,
-            #     (y + 1) * self.tilesize,
-            #     outline="yellow",
-            # )
+        pass
 
     def canvas_motion_event(self, event):
         """Sets the coordinates for drawing the hover indicator.
@@ -323,6 +285,58 @@ class MapEditor(tk.Frame):
                 **self.text_dict,
             )
 
+    def draw_tile(self, x, y):
+        self.imggrid_tk[x][y] = ImageTk.PhotoImage(self.map.tiles[x][y].tile_img)
+        self.canvas.create_image(
+            x * self.tilesize,
+            y * self.tilesize,
+            image=self.imggrid_tk[x][y],
+            anchor="nw",
+        )
+
+    def draw_room_outline(self, room):
+        # self.gc_counter += 1
+        # if self.gc_counter == 100:
+        #     print("collect")
+        #     self.gc_counter = 0
+        #     gc.collect(2)
+        for coords in room:
+            x, y = coords
+            if self.map.tiles[x][y]._n != "none":
+                self.canvas.create_line(
+                    x * self.tilesize - 2,
+                    y * self.tilesize - 2,
+                    (x + 1) * self.tilesize + 2,
+                    y * self.tilesize - 2,
+                    **self.line_settings
+                )
+            if self.map.tiles[x][y]._s != "none":
+                self.canvas.create_line(
+                    x * self.tilesize - 2,
+                    (y + 1) * self.tilesize + 2,
+                    (x + 1) * self.tilesize + 2,
+                    (y + 1) * self.tilesize + 2,
+                    **self.line_settings
+                )
+            if self.map.tiles[x][y]._e != "none":
+                self.canvas.create_line(
+                    (x + 1) * self.tilesize + 2,
+                    y * self.tilesize - 2,
+                    (x + 1) * self.tilesize + 2,
+                    (y + 1) * self.tilesize + 2,
+                    **self.line_settings
+                )
+            if self.map.tiles[x][y]._w != "none":
+                self.canvas.create_line(
+                    x * self.tilesize - 2,
+                    y * self.tilesize - 2,
+                    x * self.tilesize - 2,
+                    (y + 1) * self.tilesize + 2,
+                    **self.line_settings
+                )
+        for coords in room:
+            self.draw_tile(*coords)
+
     def update(self, adjust=True):
         self.label_hover_details_text.set(self.map.tiles[self.x][self.y].pretty_text)
         if self.fix_edges:
@@ -331,15 +345,10 @@ class MapEditor(tk.Frame):
             self.map.adjust_surrounding(self.x, self.y)
         for w in range(self.map.width):
             for h in range(self.map.height):
-                self.imggrid_tk[w][h] = ImageTk.PhotoImage(
-                    self.map.tiles[w][h].tile_img
-                )
-                self.canvas.create_image(
-                    w * self.tilesize,
-                    h * self.tilesize,
-                    image=self.imggrid_tk[w][h],
-                    anchor="nw",
-                )
+                self.draw_tile(w, h)
+        self.paint_list = self.map.get_room((self.x, self.y), [])
+        self.draw_room_outline(self.paint_list)
+
         x0 = (self.x * self.tilesize) - self.hover_boundary - 1
         y0 = (self.y * self.tilesize) - self.hover_boundary - 1
         x1 = (self.x * self.tilesize) + self.tilesize + self.hover_boundary
