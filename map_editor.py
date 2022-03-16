@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox as mb
 from PIL import Image, ImageTk
-from ode.map import Map, TileEdge, TileFloorRandomizer, MapTile, TileEdgeRandomizer
+from ode.map import Map, TileFloorRandomizer, MapTile, TileEdgeRandomizer
 from ode.constants import *
 from ode.util import timer
 from pprint import pprint
@@ -35,6 +35,7 @@ class MapEditor(tk.Frame):
         self.x = 0
         self.y = 0
         self.copy = MapTile()
+        self.copy_changed = True
         self.hover_color = "red"
         self.hover_boundary = 2
         self.hover_delay = 100
@@ -42,10 +43,7 @@ class MapEditor(tk.Frame):
         self.hover_delay_waiting = False
         self.fix_edges = True
         self.paint_list = ()
-        self.line_settings = {
-            "fill": "yellow",
-            "dash": (2, 2)
-        }
+        self.line_settings = {"fill": "yellow", "dash": (2, 2)}
         self.gc_counter = 0
 
         self.text_dict = {"font": ("Consolas 8"), "fill": "black", "anchor": "nw"}
@@ -222,6 +220,7 @@ class MapEditor(tk.Frame):
     def copy_tile(self, _):
         """Copy current tile"""
         self.copy = MapTile(**self.map.tiles[self.x][self.y].dump)
+        self.copy_changed = True
         self.update(adjust=False)
 
     def paste_tile(self, _):
@@ -304,7 +303,7 @@ class MapEditor(tk.Frame):
         #     self.gc_counter = 0
         #     gc.collect(2)
         room = self.map.get_room((self.x, self.y), [])
-        
+
         for coords in room:
             x, y = coords
             if self.map.tiles[x][y]._n != "none":
@@ -313,7 +312,7 @@ class MapEditor(tk.Frame):
                     y * self.tilesize - 2,
                     (x + 1) * self.tilesize + 2,
                     y * self.tilesize - 2,
-                    **self.line_settings
+                    **self.line_settings,
                 )
             if self.map.tiles[x][y]._s != "none":
                 self.canvas.create_line(
@@ -321,7 +320,7 @@ class MapEditor(tk.Frame):
                     (y + 1) * self.tilesize + 2,
                     (x + 1) * self.tilesize + 2,
                     (y + 1) * self.tilesize + 2,
-                    **self.line_settings
+                    **self.line_settings,
                 )
             if self.map.tiles[x][y]._e != "none":
                 self.canvas.create_line(
@@ -329,7 +328,7 @@ class MapEditor(tk.Frame):
                     y * self.tilesize - 2,
                     (x + 1) * self.tilesize + 2,
                     (y + 1) * self.tilesize + 2,
-                    **self.line_settings
+                    **self.line_settings,
                 )
             if self.map.tiles[x][y]._w != "none":
                 self.canvas.create_line(
@@ -337,7 +336,7 @@ class MapEditor(tk.Frame):
                     y * self.tilesize - 2,
                     x * self.tilesize - 2,
                     (y + 1) * self.tilesize + 2,
-                    **self.line_settings
+                    **self.line_settings,
                 )
         for coords in room:
             self.draw_tile(*coords)
@@ -352,17 +351,19 @@ class MapEditor(tk.Frame):
             for h in range(self.map.height):
                 self.draw_tile(w, h)
         # self.paint_list = self.map.get_room((self.x, self.y), [])
-        self.info_copied = ImageTk.PhotoImage(
-            self.copy.image.resize(
-                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
+        if self.copy_changed:
+            self.info_copied = ImageTk.PhotoImage(
+                self.copy.image.resize(
+                    (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
+                )
             )
-        )
+            self.copy_changed = False
         self.draw_room_outline(self.paint_list)
 
         x0 = (self.x * self.tilesize) - self.hover_boundary - 1
         y0 = (self.y * self.tilesize) - self.hover_boundary - 1
-        x1 = (self.x * self.tilesize) + self.tilesize + self.hover_boundary
-        y1 = (self.y * self.tilesize) + self.tilesize + self.hover_boundary
+        x1 = (self.x * self.tilesize) + self.tilesize + self.hover_boundary + 1
+        y1 = (self.y * self.tilesize) + self.tilesize + self.hover_boundary + 1
         self.canvas.create_rectangle(x0, y0, x1, y1, outline=self.hover_color)
         self.hover_delay = 0
         self.hover_delay_waiting = False
