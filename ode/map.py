@@ -1,8 +1,11 @@
+from time import time
 from .ode_constants import *
 from .util import BaseLoader
 from PIL import Image
 from random import randint, seed
 import json
+import blosc
+import pickle
 
 # https://stackoverflow.com/a/68944117/9267296
 
@@ -102,6 +105,15 @@ class MapTile(BaseLoader):
         super().__init__(data)
         self.tilesize = TILESIZE
         self.update()
+    
+    @property
+    def pretty_text(self):
+        # data = self.to_json
+        return f"""
+{self._n:^36}
+{self._e:>12}{self._f:^12}{self._w:12}
+{self._s:^36}
+"""[1:-1]
 
     def update(self):
         # start with new empty image on update
@@ -252,16 +264,23 @@ class MapTile(BaseLoader):
 
 
 class Map(BaseLoader):
-    def __init__(self, width: int = 50, height: int = 50) -> None:
+    def __init__(self, width: int = 50, height: int = 50, tiles=None) -> None:
         self.width = width
         self.height = height
-        self.tiles = [
-            [MapTile(EMPTY_TILE) for _ in range(self.width)] for _ in range(self.height)
-        ]
+        if tiles:
+            self.tiles = tiles
+        else:
+            self.tiles = [
+                [MapTile(EMPTY_TILE) for _ in range(self.width)] for _ in range(self.height)
+            ]
 
-    @property
-    def to_json(self) -> dict:
-        return self.tiles
+    # @property
+    # def to_json(self) -> dict:
+    #     return self.tiles
+    
+    @classmethod
+    def from_json(cls, data: dict) -> "Map":
+        return cls(tiles=data)
 
     def randomize(self, fix_edges=True):
         """Randomizes the map.
@@ -297,6 +316,52 @@ class Map(BaseLoader):
             self.tiles[x][0].n = "wall"
             self.tiles[x][-1].s = "wall"
 
+    def adjust_surrounding(self, x, y):
+        """Makes the surrounding tiles' edges match the provided tile.
+        Casting as string basically performs a non-shallow copy"""
+        if x - 1 >= 0:
+            self.tiles[x - 1][y].e = str(self.tiles[x][y]._w)
+        if x + 1 < self.width:
+            self.tiles[x + 1][y].w = str(self.tiles[x][y]._e)
+        if y - 1 >= 0:
+            self.tiles[x][y - 1].s = str(self.tiles[x][y]._n)
+        if y + 1 < self.width:
+            self.tiles[x][y + 1].n = str(self.tiles[x][y]._s)
+
+    def get_room(self, start: tuple, visited: list=[]) -> list:
+        """Recursive function to find boundaries of a room.
+
+        Args:
+            start (tuple): start (x, y) coordinates
+            visited (list of tuples, optional): list to keep track of which tiles have been checked. Defaults to None.
+
+        Returns:
+            list: (x, y) coordinates as a list
+        """
+        if start in visited:
+            return visited
+        else:
+            visited.append(start)
+        x, y = start
+        if self.tiles[x][y]._w == "none" and x-1 >= 0:
+            new_coords = (x-1, y)
+            if not(new_coords in visited):
+                self.get_room(new_coords, visited=visited)
+        if self.tiles[x][y]._e == "none" and x+1 < self.height:
+            new_coords = (x+1, y)
+            if not(new_coords in visited):
+                self.get_room(new_coords, visited=visited)
+        if self.tiles[x][y]._n == "none" and y-1 >= 0:
+            new_coords = (x, y-1)
+            if not(new_coords in visited):
+                self.get_room(new_coords, visited=visited)
+        if self.tiles[x][y]._s == "none" and y+1 < self.height:
+            new_coords = (x, y+1)
+            if not(new_coords in visited):
+                self.get_room(new_coords, visited=visited)
+        return visited
+
+
     @property
     def randomtile(self):
         edge = TileEdge(extra_empty=2)
@@ -311,6 +376,36 @@ class Map(BaseLoader):
     def load_tiles(self):
         pass
 
-    def save(self, filename="test.json"):
-        with open(filename, "w") as outfile:
-            json.dump(json.loads(str(self.to_json)), outfile, indent=4)
+    @classmethod
+    def load_blosc(cls, filename="test.map"):
+        """Load map object.
+        Maps is stored as a blosc compressed pickled Map object"""
+        with open(filename, "rb") as infile:
+            obj = pickle.loads(blosc.decompress(infile.read()))
+        return obj
+
+    @classmethod
+    def load_blosc_json(cls, filename="test.map"):
+        """Load map object.
+        Maps is stored as a blosc compressed pickled JSON"""
+        with open(filename, "rb") as infile:
+            obj = pickle.loads(blosc.decompress(infile.read()))
+        return cls(obj)
+
+    def save_blosc_json(self, filename="test.map"):
+        """Save map object.
+        Maps is stored as a blosc compressed pickled JSON"""
+        with open(filename, "wb") as outfile:
+            outfile.write(blosc.compress(pickle.dumps(self.to_json)))
+
+    def save_blosc(self, filename="test.map"):
+        """Save map object.
+        Maps is stored as a blosc compressed pickled Map object"""
+        start = time()
+        print(f"start: {start}")
+        with open(filename, "wb") as outfile:
+            outfile.write(blosc.compress(pickle.dumps(self)))
+        end = time()
+        print(f"end:   {end}")
+        print(f"diff:  {end-start}")
+

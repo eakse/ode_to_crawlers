@@ -1,14 +1,32 @@
 import tkinter as tk
+from tkinter import filedialog as fd
+from tkinter import messagebox as mb
 from PIL import Image, ImageTk
 from ode.map import Map, TileFloor, MapTile, TileEdge
 from ode.ode_constants import *
-import os
+from pprint import pprint
+
+
+class MenuBar(tk.Menu):
+    def __init__(self, parent):
+        super(MenuBar, self).__init__(parent)
+        filemenu = tk.Menu(self)
+        filemenu.add_command(label="Open Map", command=parent.load_blosc)
+        filemenu.add_command(label="Save Map", command=parent.save_blosc)
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=self.exit_program)
+        self.add_cascade(label="File", menu=filemenu)
+
+    def exit_program(self):
+        exit()
 
 
 class MapEditor(tk.Frame):
     def __init__(self, parent):
         super(MapEditor, self).__init__(parent)
-        self.copy = EMPTY_TILE
+        self.menubar = MenuBar(self)
+        parent.config(menu=self.menubar)
+        self.copy = dict(EMPTY_TILE)
         self.map_width = 20
         self.map_height = 20
         self.canvas_padding = 5
@@ -20,8 +38,43 @@ class MapEditor(tk.Frame):
         self.hover_delay = 100
         self.hover_delay_waiting = False
         self.fix_edges = True
-        
-        self.used_font = ('Calibri 14')
+
+        self.text_dict = {"font": ("Consolas 8"), "fill": "black", "anchor": "nw"}
+        self.label_dict = {"font": ("Consolas 8"), "anchor": "nw", "bg": "white"}
+        self.key_list = [
+            {"w": "Cycle North"},
+            {"a": "Cycle West"},
+            {"s": "Cycle South"},
+            {"d": "Cycle East"},
+            {"f": "Cycle floor"},
+            {"c": "Copy"},
+            {"v": "Paste"},
+            {"x": "Clear tile"},
+            {"n": "Clear map"},
+            {"h": "Randomize map"},
+            {"z": "Adjust surrounding"},
+        ]
+        self.key_list_x = self.canvas_padding * 2
+        self.key_list_y = (
+            (self.map_height * self.tilesize)
+            - ((1 + len(self.key_list)) * 10)
+            - self.canvas_padding
+        )
+
+        self.auto_adjust = tk.BooleanVar()
+        self.auto_adjust_cb = tk.Checkbutton(
+            parent,
+            text="Autoadjust surrounding",
+            **self.label_dict,
+            variable=self.auto_adjust,
+            onvalue=True,
+            offvalue=False,
+        )
+        self.auto_adjust_cb.select()
+        self.auto_adjust_cb.place(
+            x=((self.map_width * TILESIZE) + (self.canvas_padding * 2)),
+            y=self.key_list_y - 20,
+        )
 
         self.canvas = tk.Canvas(
             self,
@@ -35,11 +88,27 @@ class MapEditor(tk.Frame):
 
         self.infoblock = tk.Canvas(
             self,
-            width=100,
+            width=200,
             height=self.map_height * self.tilesize,
             highlightthickness=0,
             background="white",
         )
+        self.label_copied = tk.Label(
+            self.infoblock, text="Copied tile:", **self.label_dict
+        )
+        self.label_copied.place(x=0, y=0)
+        self.label_hover = tk.Label(
+            self.infoblock, text="Hovered tile:", **self.label_dict
+        )
+        self.label_hover.place(x=0, y=70)
+        self.label_hover_details_text = tk.StringVar()
+        self.label_hover_details = tk.Label(
+            self.infoblock,
+            textvariable=self.label_hover_details_text,
+            **self.label_dict,
+        )
+        self.label_hover_details.place(x=0, y=140)
+
         self.infoblock.create_rectangle(
             0,
             0,
@@ -53,20 +122,23 @@ class MapEditor(tk.Frame):
 
         # BINDINGS
         self.canvas.bind("<Button-1>", self.canvas_click_event)
-        self.canvas.bind_all("<w>", self.canvas_w_event)
-        self.canvas.bind_all("<a>", self.canvas_a_event)
-        self.canvas.bind_all("<s>", self.canvas_s_event)
-        self.canvas.bind_all("<d>", self.canvas_d_event)
-        self.canvas.bind_all("<f>", self.canvas_f_event)
-        self.canvas.bind_all("<c>", self.canvas_c_event)
-        self.canvas.bind_all("<v>", self.canvas_v_event)
-        self.canvas.bind_all("<x>", self.canvas_x_event)
-        self.canvas.bind_all("<n>", self.canvas_n_event)
-        self.canvas.bind_all("<z>", self.canvas_z_event)
+        self.canvas.bind("<Button-2>", self.canvas_click_right_event)
+        self.canvas.bind_all("<w>", self.cycle_north)
+        self.canvas.bind_all("<a>", self.cycle_west)
+        self.canvas.bind_all("<s>", self.cycle_south)
+        self.canvas.bind_all("<d>", self.cycle_east)
+        self.canvas.bind_all("<f>", self.cycle_floor)
+        self.canvas.bind_all("<c>", self.copy_tile)
+        self.canvas.bind_all("<v>", self.paste_tile)
+        self.canvas.bind_all("<x>", self.clear_tile)
+        self.canvas.bind_all("<n>", self.clear_map)
+        self.canvas.bind_all("<z>", self.fix_surrounding)
+        self.canvas.bind_all("<h>", self.randomize)
         self.canvas.bind("<Motion>", self.canvas_motion_event)
 
         self.map = Map(self.map_width, self.map_height)
         self.map.randomize()
+        self.map = Map.load_blosc("C:/###VS Projects/ode_to_crawlers/data/maps/1.map")
         self.init_map()
         self.update()
         self.draw_keybindings()
@@ -74,9 +146,88 @@ class MapEditor(tk.Frame):
     def xy_from_event(self, event):
         return event.x // self.tilesize, event.y // self.tilesize
 
-    def canvas_click_event(self, event):
+    def save_blosc(self):
+        filetypes = (("Map files", "*.map"),)
+        filename = fd.asksaveasfilename(
+            title="Save map", filetypes=filetypes, defaultextension=".map"
+        )  # , initialdir="/"
+        if filename:
+            if filename.endswith(".map"):
+                self.map.save_blosc(filename)
+            else:
+                mb.showerror(title="Error", message="Only .map files are allowed...")
+        else:
+            print("No file selected")
+
+    def load_blosc(self):
+        filetypes = (("Map files", "*.map"),)
+        filename = fd.askopenfilename(
+            title="Open map", filetypes=filetypes, defaultextension=".map"
+        )
+        if filename:
+            if filename.endswith(".map"):
+                self.map = Map.load_blosc(filename)
+                self.update()
+            else:
+                mb.showerror(title="Error", message="Only .map files are allowed...")
+        else:
+            print("No file selected")
+
+    def randomize(self, _):
+        self.map.randomize()
+        self.update(adjust=False)
+
+    def canvas_click_event(self, _):
         self.map.tiles[self.x][self.y] = MapTile(self.map.randomtile)
         self.update()
+
+    def canvas_click_right_event(self, _):
+        self.paint_list = self.map.get_room((self.x, self.y), [])
+        for item in self.paint_list:
+            x, y = item
+            if self.map.tiles[x][y]._n != "none":
+                self.canvas.create_line(
+                    x *       self.tilesize -2,
+                    y *       self.tilesize -2,
+                    (x + 1) * self.tilesize +2,
+                    y *        self.tilesize-2,
+                    fill="yellow",
+                    dash=(2, 2)
+                )
+            if self.map.tiles[x][y]._s != "none":
+                self.canvas.create_line(
+                    x *       self.tilesize -2,
+                    (y + 1) * self.tilesize +2,
+                    (x + 1) * self.tilesize +2,
+                    (y + 1) * self.tilesize +2,
+                    fill="yellow",
+                    dash=(2, 2)
+                )
+            if self.map.tiles[x][y]._e != "none":
+                self.canvas.create_line(
+                    (x + 1) * self.tilesize +2,
+                    y *       self.tilesize -2,
+                    (x + 1) * self.tilesize +2,
+                    (y + 1) * self.tilesize +2,
+                    fill="yellow",
+                    dash=(2, 2)
+                )
+            if self.map.tiles[x][y]._w != "none":
+                self.canvas.create_line(
+                    x *       self.tilesize -2,
+                    y *       self.tilesize -2,
+                    x *       self.tilesize -2,
+                    (y + 1) * self.tilesize +2,
+                    fill="yellow",
+                    dash=(2, 2)
+                )
+            # self.canvas.create_rectangle(
+            #     x * self.tilesize,
+            #     y * self.tilesize,
+            #     (x + 1) * self.tilesize,
+            #     (y + 1) * self.tilesize,
+            #     outline="yellow",
+            # )
 
     def canvas_motion_event(self, event):
         """Sets the coordinates for drawing the hover indicator.
@@ -92,69 +243,62 @@ class MapEditor(tk.Frame):
 
     def execute_hover(self):
         self.hover_delay_waiting = False
-        self.update()
+        self.update(adjust=False)
 
-    def canvas_n_event(self, _):
+    def clear_map(self, _):
         """Clear map"""
         self.map.clear()
-        self.update()
+        self.update(adjust=False)
 
-    def canvas_z_event(self, _):
+    def fix_surrounding(self, _):
         """Makes the surrounding tiles' edges match the current tile"""
-        if self.x - 1 >= 0:
-            self.map.tiles[self.x - 1][self.y].e = self.map.tiles[self.x][self.y].w
-        if self.x + 1 < self.map.width:
-            self.map.tiles[self.x + 1][self.y].w = self.map.tiles[self.x][self.y].e
-        if self.y - 1 >= 0:
-            self.map.tiles[self.x][self.y - 1].s = self.map.tiles[self.x][self.y].n
-        if self.y + 1 < self.map.width:
-            self.map.tiles[self.x][self.y + 1].n = self.map.tiles[self.x][self.y].s
-        self.update()
+        self.map.adjust_surrounding(self.x, self.y)
+        self.update(adjust=False)
 
-    def canvas_c_event(self, _):
+    def copy_tile(self, _):
         """Copy current tile"""
-        self.copy = self.map.tiles[self.x][self.y].to_json
-        self.update()
+        self.copy = dict(self.map.tiles[self.x][self.y].to_json)
+        self.update(adjust=False)
 
-    def canvas_v_event(self, _):
+    def paste_tile(self, _):
         """Paste previously copied tile. (defaults to ode.ode_constants.EMPTY_TILE)"""
         self.map.tiles[self.x][self.y] = MapTile(self.copy)
         self.update()
 
-    def canvas_x_event(self, _):
+    def clear_tile(self, _):
         """Paste ode.ode_constants.EMPTY_TILE (in other words, delete)"""
         self.map.tiles[self.x][self.y] = MapTile(EMPTY_TILE)
         self.update()
 
-    def canvas_w_event(self, _):
+    def cycle_north(self, _):
         """Cycle north edge"""
         self.map.tiles[self.x][self.y].n = TileEdge(
             start_type=self.map.tiles[self.x][self.y].n
         ).next
         self.update()
 
-    def canvas_a_event(self, _):
+    def cycle_west(self, _):
         """Cycle west edge"""
         self.map.tiles[self.x][self.y].w = TileEdge(
             start_type=self.map.tiles[self.x][self.y].w
         ).next
         self.update()
 
-    def canvas_s_event(self, _):
+    def cycle_south(self, _):
         """Cycle south edge"""
         self.map.tiles[self.x][self.y].s = TileEdge(
             start_type=self.map.tiles[self.x][self.y].s
         ).next
         self.update()
 
-    def canvas_d_event(self, _):
+    def cycle_east(self, _):
         """Cycle east edge"""
         self.map.tiles[self.x][self.y].e = TileEdge(
             start_type=self.map.tiles[self.x][self.y].e
         ).next
         self.update()
 
-    def canvas_f_event(self, _):
+    def cycle_floor(self, _):
         """Cycle floor"""
         self.map.tiles[self.x][self.y].f = TileFloor(
             start_type=self.map.tiles[self.x][self.y].f
@@ -167,11 +311,24 @@ class MapEditor(tk.Frame):
         ]
 
     def draw_keybindings(self):
-        self.infoblock.create_text(200, 10, text="Keybindings:", font=('Helvetica 15 bold'))
+        self.infoblock.create_text(
+            self.key_list_x, self.key_list_y, text="Keybindings:", **self.text_dict
+        )
+        for index, item in enumerate(self.key_list):
+            key, value = next(iter(item.items()))
+            self.infoblock.create_text(
+                self.key_list_x + 4,
+                self.key_list_y + (index + 1) * 10,
+                text=f"{key}: {value}",
+                **self.text_dict,
+            )
 
-    def update(self):
+    def update(self, adjust=True):
+        self.label_hover_details_text.set(self.map.tiles[self.x][self.y].pretty_text)
         if self.fix_edges:
             self.map.fix_edges()
+        if adjust and self.auto_adjust.get():
+            self.map.adjust_surrounding(self.x, self.y)
         for w in range(self.map.width):
             for h in range(self.map.height):
                 self.imggrid_tk[w][h] = ImageTk.PhotoImage(
@@ -201,12 +358,15 @@ class MapEditor(tk.Frame):
                 (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
             )
         )
-        self.infoblock.create_image(20, 80, image=self.info_hover, anchor="nw")
+        self.infoblock.create_image(20, 90, image=self.info_hover, anchor="nw")
 
 
 if __name__ == "__main__":
     root = tk.Tk(className=" ODE Map Editor")
+    root.option_add("*tearOff", False)
+    root.config(bg="white")
     main = MapEditor(root)
+
     main.pack(
         fill="both", expand=True, pady=main.canvas_padding, padx=main.canvas_padding
     )
