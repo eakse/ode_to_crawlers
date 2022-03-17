@@ -1,3 +1,23 @@
+# -*- coding: utf-8 -*-
+"""Map class module, with all other classes that the Map class uses
+
+The idea of this module is to provide a Map class that can be used
+to represent the maps in the game.
+
+All classes should have 2 methods (dump and dumps) similar to how
+json.dump and json.dumps work. The dumps will pass any kwargs to
+the json.dumps method.
+
+They should also have at least one method that functions similar
+to json.load to call the class constructor with the provided 
+args/kwargs
+
+NOTE: There might be some obsolete classes/functions in here. 
+I move them to ode.obsolete every now and then, if I'm sure I 
+do not want to use them anymore...
+"""
+
+
 from time import time
 from ode.constants import *
 from ode.util import BaseLoader
@@ -14,6 +34,8 @@ seed()
 
 
 def list_next(item, somelist: list):
+    if item not in somelist:
+        return somelist[0]
     index = somelist.index(item) + 1
     if index >= len(somelist):
         index = 0
@@ -25,57 +47,20 @@ def list_random(somelist: list):
 
 
 class TileBase:
-    ##### POSSIBLE EDGE STYLES
-    NONE = "none"
-    WALL = "wall"
-    DOOR = "door"
-    DOOR_HIDDEN = "door_hidden"
-    SEPA_INV = "sepa_inv"
+    """Base class for TileEdge and TileFloor.
 
-    ##### LISTS FOR EDGES
-    EDGE_LIST = [NONE, WALL, DOOR, DOOR_HIDDEN, SEPA_INV]
-    EDGE_LIST_SIMPLE = [NONE, WALL, DOOR, DOOR_HIDDEN]
-    EDGE_LIST_VISIBLE = [NONE, WALL, DOOR, DOOR_HIDDEN]
-    EDGE_LIST_VISIBLE_DEV = [NONE, WALL, DOOR, DOOR_HIDDEN, SEPA_INV]
-    EDGE_LIST_SOLID = [WALL, DOOR, DOOR_HIDDEN]
-    EDGE_LIST_PASSABLE = [NONE, DOOR, DOOR_HIDDEN, SEPA_INV]
+    Mainly used to contain some methods/constants that are
+    shared between the 2 classes.
 
-    ##### POSSIBLE FLOOR STYLES
-    FLOOR = "floor"
-    PIT = "pit"
-    STAIRS_UP = "stairs_up"
-    STAIRS_DOWN = "stairs_down"
-    TELEPORTER = "teleporter"
-    SOLID = "solid"
-
-    ##### LISTS FOR FLOORS
-    FLOOR_LIST = [FLOOR, PIT, STAIRS_UP, STAIRS_DOWN, TELEPORTER, SOLID, NONE]
-    FLOOR_LIST_SIMPLE = [FLOOR, SOLID, NONE]
-    FLOOR_LIST_VISIBLE = [FLOOR, PIT, STAIRS_UP, STAIRS_DOWN, TELEPORTER, SOLID, NONE]
-    FLOOR_LIST_VISIBLE_DEV = [
-        FLOOR,
-        PIT,
-        STAIRS_UP,
-        STAIRS_DOWN,
-        TELEPORTER,
-        SOLID,
-        NONE,
-    ]
-    FLOOR_LIST_SOLID = [SOLID]
-    FLOOR_LIST_PASSABLE = [FLOOR, PIT, STAIRS_UP, STAIRS_DOWN, TELEPORTER, NONE]
-    FLOOR_LIST_PASSABLE_WARN = [PIT, TELEPORTER, NONE]
-
-    ORI_N = "_n"
-    ORI_E = "_e"
-    ORI_S = "_s"
-    ORI_W = "_w"
-    ORI_LIST = [ORI_N, ORI_E, ORI_S, ORI_W]
+    NOTE: Should not be instantiated itself, instead instantiate it's
+    child classes.
+    """
 
     DUMP_EXCLUDE_LIST = ["_dev_mode"]
 
     def __init__(self, dev_mode=False, **kwargs):
         if not hasattr(self, "style"):
-            self._style = self.NONE
+            self._style = NONE
         if hasattr(self, "dev_mode"):
             self._dev_mode = self.dev_mode or dev_mode
         else:
@@ -125,13 +110,13 @@ class TileEdge(TileBase):
 
     @property
     def style(self) -> str:
-        if self._style not in self.EDGE_LIST:
-            self._style = self.NONE
+        if self._style not in EDGE_LIST:
+            self._style = NONE
         return self._style
 
     @style.setter
     def style(self, value: str) -> bool:
-        if value in self.EDGE_LIST:
+        if value in EDGE_LIST:
             self._style = value
             return True
         return False
@@ -139,17 +124,21 @@ class TileEdge(TileBase):
     @property
     def visible(self) -> bool:
         if self._dev_mode:
-            return self._style in self.EDGE_LIST_VISIBLE_DEV
+            return self._style in EDGE_LIST_VISIBLE_DEV
         else:
-            return self._style in self.EDGE_LIST_VISIBLE
+            return self._style in EDGE_LIST_VISIBLE
 
     @property
     def solid(self) -> bool:
-        return self._style in self.EDGE_LIST_SOLID
+        return self._style in EDGE_LIST_SOLID
+
+    @property
+    def solid_room(self) -> bool:
+        return self._style in EDGE_LIST_SOLID_ROOM
 
     @property
     def passable(self) -> bool:
-        return self._style in self.EDGE_LIST_PASSABLE
+        return self._style in EDGE_LIST_PASSABLE
 
     @property
     def filename(self) -> str:
@@ -160,18 +149,18 @@ class TileFloor(TileBase):
     def __init__(self, dev_mode=False, **kwargs):
         # check because new tiles should start with floor instead of none
         if "style" not in kwargs.keys():
-            kwargs["style"] = TileBase.FLOOR
+            kwargs["style"] = FLOOR
         super().__init__(dev_mode, **kwargs)
 
     @property
     def style(self) -> str:
-        if self._style not in self.FLOOR_LIST:
-            self._style = self.FLOOR
+        if self._style not in FLOOR_LIST:
+            self._style = FLOOR
         return self._style
 
     @style.setter
     def style(self, value: str) -> bool:
-        if value in self.FLOOR_LIST:
+        if value in FLOOR_LIST:
             self._style = value
             return True
         return False
@@ -179,21 +168,21 @@ class TileFloor(TileBase):
     @property
     def visible(self) -> bool:
         if self._dev_mode:
-            return self._style in self.FLOOR_LIST_VISIBLE_DEV
+            return self._style in FLOOR_LIST_VISIBLE_DEV
         else:
-            return self._style in self.FLOOR_LIST_VISIBLE
+            return self._style in FLOOR_LIST_VISIBLE
 
     @property
     def solid(self) -> bool:
-        return self._style in self.FLOOR_LIST_SOLID
+        return self._style in FLOOR_LIST_SOLID
 
     @property
     def passable(self) -> bool:
-        return self._style in self.FLOOR_LIST_PASSABLE
+        return self._style in FLOOR_LIST_PASSABLE
 
     @property
     def passable_warn(self) -> bool:
-        return self._style in self.FLOOR_LIST_PASSABLE_WARN
+        return self._style in FLOOR_LIST_PASSABLE_WARN
 
     @property
     def filename(self) -> str:
@@ -204,9 +193,9 @@ class TileEdgeRandomizer:
     """Simple class to do some simple manipulation of tile edges"""
 
     def __init__(self, extra_empty=0, start_type=None) -> None:
-        self.types = TileEdge.EDGE_LIST_SIMPLE
+        self.types = EDGE_LIST_SIMPLE
         for _ in range(extra_empty):
-            self.types.insert(0, TileEdge.NONE)
+            self.types.insert(0, NONE)
         if start_type:
             self.index = self.types.index(start_type)
         else:
@@ -232,12 +221,12 @@ class TileEdgeRandomizer:
 class TileFloorRandomizer:
     """Simple class to do some simple manipulation of floors"""
 
-    def __init__(self, extra_empty=0, extra_floor=0, start_type=TileBase.FLOOR) -> None:
-        self.types = TileBase.FLOOR_LIST_SIMPLE
+    def __init__(self, extra_empty=0, extra_floor=0, start_type=FLOOR) -> None:
+        self.types = FLOOR_LIST_SIMPLE
         for _ in range(extra_empty):
-            self.types.insert(0, TileBase.NONE)
+            self.types.insert(0, NONE)
         for _ in range(extra_floor):
-            self.types.insert(0, TileBase.FLOOR)
+            self.types.insert(0, FLOOR)
         self.index = self.types.index(start_type)
 
     @property
@@ -290,17 +279,17 @@ class MapTile:
     @classmethod
     def random(
         cls,
-        edge_list: list = TileEdge.EDGE_LIST_SIMPLE,
-        floor_list: list = TileFloor.FLOOR_LIST_SIMPLE,
-        floor_random: bool = False,
+        edge_list: list = EDGE_LIST_SIMPLE,
+        floor_list: list = FLOOR_LIST_SIMPLE,
+        floor_random: bool = False, **kwargs
     ):
         if floor_random:
-            kwargs = {"f": choice(floor_list)}
+            _kwargs = {"f": choice(floor_list)}
         else:
-            kwargs = {}
+            _kwargs = {}
         for edge in ["n", "e", "s", "w"]:
-            kwargs[edge] = choice(edge_list)
-        return cls(**kwargs)
+            _kwargs[edge] = choice(edge_list)
+        return cls(**_kwargs, **kwargs)
 
     @property
     def dev_mode(self) -> bool:
@@ -349,9 +338,9 @@ class MapTile:
 
     @n.setter
     def n(self, value: str) -> bool:
-        if value in TileEdge.EDGE_LIST:
+        if value in EDGE_LIST:
             self._n = self._n.style(value)
-        return value in TileEdge.EDGE_LIST
+        return value in EDGE_LIST
 
     @property
     def e(self) -> TileEdge:
@@ -359,9 +348,9 @@ class MapTile:
 
     @e.setter
     def e(self, value: str) -> bool:
-        if value in TileEdge.EDGE_LIST:
+        if value in EDGE_LIST:
             self._e = self._e.style(value)
-        return value in TileEdge.EDGE_LIST
+        return value in EDGE_LIST
 
     @property
     def s(self) -> TileEdge:
@@ -369,9 +358,9 @@ class MapTile:
 
     @s.setter
     def s(self, value: str) -> bool:
-        if value in TileEdge.EDGE_LIST:
+        if value in EDGE_LIST:
             self._s = self._s.style(value)
-        return value in TileEdge.EDGE_LIST
+        return value in EDGE_LIST
 
     @property
     def w(self) -> TileEdge:
@@ -379,9 +368,9 @@ class MapTile:
 
     @w.setter
     def w(self, value: str) -> bool:
-        if value in TileEdge.EDGE_LIST:
+        if value in EDGE_LIST:
             self._w = self._w.style(value)
-        return value in TileEdge.EDGE_LIST
+        return value in EDGE_LIST
 
     @property
     def f(self) -> TileFloor:
@@ -389,29 +378,41 @@ class MapTile:
 
     @f.setter
     def f(self, value: str) -> bool:
-        if value in TileFloor.FLOOR_LIST:
+        if value in FLOOR_LIST:
             self._f = self._f.style(value)
-        return value in TileFloor.FLOOR_LIST
+        return value in FLOOR_LIST
 
 
 class Map(BaseLoader):
-    def __init__(self, width: int = 50, height: int = 50, tiles=None) -> None:
+    def __init__(self, width: int = 50, height: int = 50, tiles=None, dev_mode=False) -> None:
         self.width = width
         self.height = height
+        self.dev_mode = dev_mode
         if tiles:
-            self.tiles = tiles
+            self.tiles = [
+                [MapTile(dev_mode=dev_mode, **tiles[x][y]) for x in range(self.width)] for y in range(self.height)
+            ]
         else:
             self.tiles = [
-                [MapTile() for _ in range(self.width)] for _ in range(self.height)
+                [MapTile(dev_mode=dev_mode) for _ in range(self.width)] for _ in range(self.height)
             ]
 
-    # @property
-    # def to_json(self) -> dict:
-    #     return self.tiles
+    @property
+    def dump(self) -> dict:
+        return {
+            "width": self.width,
+            "height": self.height,
+            "tiles": [
+                [self.tiles[x][y].dump for x in range(self.width)] for y in range(self.height)
+            ]
+        }
+
+    def dumps(self, **kwargs) -> str:
+        return json.dumps(self.dump, **kwargs)        
 
     @classmethod
-    def from_json(cls, data: dict) -> "Map":
-        return cls(tiles=data)
+    def from_json(cls, **kwargs) -> "Map":
+        return cls(**kwargs)
 
     def randomize(self, fix_edges=True):
         """Randomizes the map.
@@ -429,7 +430,7 @@ class Map(BaseLoader):
         """Clears the map.
 
         Args:
-            fix_edges (bool, optional): Set to true to call fix_edges() after clearing. Defaults to True.
+            fix_edges (bool, optional): Set to true to call self.fix_edges() after clearing. Defaults to True.
         """
         self.tiles = [
             [MapTile(EMPTY_TILE) for _ in range(self.width)] for _ in range(self.height)
@@ -440,15 +441,14 @@ class Map(BaseLoader):
     def fix_edges(self):
         """Makes sure the edges of the map have walls."""
         for y in range(self.height):
-            self.tiles[0][y].w.style = TileBase.WALL
-            self.tiles[-1][y].e.style = TileBase.WALL
+            self.tiles[0][y].w.style = WALL
+            self.tiles[-1][y].e.style = WALL
         for x in range(self.width):
-            self.tiles[x][0].n.style = TileBase.WALL
-            self.tiles[x][-1].s.style = TileBase.WALL
+            self.tiles[x][0].n.style = WALL
+            self.tiles[x][-1].s.style = WALL
 
     def adjust_surrounding(self, x, y):
-        """Makes the surrounding tiles' edges match the provided tile.
-        Casting as string basically performs a non-shallow copy"""
+        """Makes the surrounding tiles' edges match the provided tile."""
         if x - 1 >= 0:
             self.tiles[x - 1][y].e.style = self.tiles[x][y].w.style
         if x + 1 < self.width:
@@ -458,7 +458,27 @@ class Map(BaseLoader):
         if y + 1 < self.width:
             self.tiles[x][y + 1].n.style = self.tiles[x][y].s.style
 
-    def get_room(self, start: tuple, visited: list = []) -> list:
+    def coord_in_all_rooms(self, coords: tuple) -> bool:
+        for room in self.all_rooms:
+            if coords in room:
+                return True
+        return False
+
+
+
+    def get_rooms_all(self) -> list:
+        self.all_rooms_visisted = [[False for _ in range(self.width)] for _ in range(self.height)]
+        self.all_rooms = []
+        for x in range(self.width):
+            for y in range(self.width):
+                room = self.get_room((x,y), check_all=True)
+                if len(room) > 0:
+                    self.all_rooms.append(room)
+        print(len(self.all_rooms))
+        return(self.all_rooms)
+
+
+    def get_room(self, start: tuple, visited: list = [], check_all=False) -> list:
         """Recursive function to find boundaries of a room.
 
         Args:
@@ -468,42 +488,48 @@ class Map(BaseLoader):
         Returns:
             list: (x, y) coordinates as a list
         """
-        if start in visited:
+        x, y = start
+        if check_all and self.all_rooms_visisted[x][y]:
+            return visited
+        elif start in visited:
+            if check_all:
+                self.all_rooms_visisted[x][y] = True
             return visited
         else:
+            if check_all:
+                self.all_rooms_visisted[x][y] = True
             visited.append(start)
-        x, y = start
-        if not (self.tiles[x][y].w.solid) and x - 1 >= 0:
+        if not (self.tiles[x][y].w.solid_room) and x - 1 >= 0:
             new_coords = (x - 1, y)
             if not (new_coords in visited):
                 self.get_room(new_coords, visited=visited)
-        if not (self.tiles[x][y].e.solid) and x + 1 < self.height:
+        if not (self.tiles[x][y].e.solid_room) and x + 1 < self.height:
             new_coords = (x + 1, y)
             if not (new_coords in visited):
                 self.get_room(new_coords, visited=visited)
-        if not (self.tiles[x][y].n.solid) and y - 1 >= 0:
+        if not (self.tiles[x][y].n.solid_room) and y - 1 >= 0:
             new_coords = (x, y - 1)
             if not (new_coords in visited):
                 self.get_room(new_coords, visited=visited)
-        if not (self.tiles[x][y].s.solid) and y + 1 < self.height:
+        if not (self.tiles[x][y].s.solid_room) and y + 1 < self.height:
             new_coords = (x, y + 1)
             if not (new_coords in visited):
                 self.get_room(new_coords, visited=visited)
-        return visited
+        return sorted(visited)
 
-    @property
-    def randomtile(self):
-        edge = TileEdgeRandomizer(extra_empty=2)
-        return {
-            "_n": edge.random,
-            "_e": edge.random,
-            "_s": edge.random,
-            "_w": edge.random,
-            "_f": "floor",
-        }
+    # @property
+    # def randomtile(self):
+    #     edge = TileEdgeRandomizer(extra_empty=2)
+    #     return {
+    #         "_n": edge.random,
+    #         "_e": edge.random,
+    #         "_s": edge.random,
+    #         "_w": edge.random,
+    #         "_f": "floor",
+    #     }
 
-    def load_tiles(self):
-        pass
+    # def load_tiles(self):
+    #     pass
 
     @classmethod
     def load_blosc(cls, filename="test.map"):

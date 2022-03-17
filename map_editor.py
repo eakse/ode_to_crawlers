@@ -1,12 +1,29 @@
+# -*- coding: utf-8 -*-
+"""Map editor
+
+Please note that this file is a bit of a mess. It's not intended for 
+readability, modularity or any such fancy concepts.
+(Sarcasm very much intended)
+
+This is just a tool to help me build the game, so it's built under 
+Murphy's law:
+If it's stupid but it works, it isn't stupid.
+
+Please note that the class MapEditor is extremely messy ☹
+On the positive side, code formatting is OK.
+"""
+
+
 import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox as mb
 from PIL import Image, ImageTk
-from ode.map import Map, TileFloorRandomizer, MapTile, TileEdgeRandomizer
+from ode.map import Map, TileEdge, TileFloor, MapTile, list_next
 from ode.constants import *
 from ode.util import timer
 from pprint import pprint
 import gc
+import json
 
 
 class MenuBar(tk.Menu):
@@ -15,6 +32,9 @@ class MenuBar(tk.Menu):
         filemenu = tk.Menu(self)
         filemenu.add_command(label="Open Map", command=parent.load_blosc)
         filemenu.add_command(label="Save Map", command=parent.save_blosc)
+        filemenu.add_separator()
+        filemenu.add_command(label="Open JSON", command=parent.load_json)
+        filemenu.add_command(label="Save JSON", command=parent.save_json)
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.exit_program)
         self.add_cascade(label="File", menu=filemenu)
@@ -31,19 +51,20 @@ class MapEditor(tk.Frame):
         self.map_width = 20
         self.map_height = 20
         self.canvas_padding = 5
-        self.tilesize = TILESIZE
         self.x = 0
         self.y = 0
         self.copy = MapTile()
         self.copy_changed = True
         self.hover_color = "red"
         self.hover_boundary = 2
-        self.hover_delay = 100
+        self.hover_delay = 50
         self.hover_delay_room = 500
         self.hover_delay_waiting = False
         self.fix_edges = True
-        self.paint_list = ()
-        self.line_settings = {"fill": "yellow", "dash": (2, 2)}
+        self.hover_room = ()
+        self.line_settings = {"fill": "yellow"}  # , "dash": (2, 2)
+        self.room_text_dict = {"font": ("Consolas 6"), "fill": "yellow", "anchor": "nw"}
+        self.rooms = []
         self.gc_counter = 0
 
         self.text_dict = {"font": ("Consolas 8"), "fill": "black", "anchor": "nw"}
@@ -63,7 +84,7 @@ class MapEditor(tk.Frame):
         ]
         self.key_list_x = self.canvas_padding * 2
         self.key_list_y = (
-            (self.map_height * self.tilesize)
+            (self.map_height * TILESIZE)
             - ((1 + len(self.key_list)) * 10)
             - self.canvas_padding
         )
@@ -96,11 +117,11 @@ class MapEditor(tk.Frame):
             x=((self.map_width * TILESIZE) + (self.canvas_padding * 2)),
             y=self.key_list_y - 40,
         )
-        
+
         self.canvas = tk.Canvas(
             self,
-            width=self.map_width * self.tilesize,
-            height=self.map_height * self.tilesize,
+            width=self.map_width * TILESIZE,
+            height=self.map_height * TILESIZE,
             highlightthickness=0,
             background="grey",
         )
@@ -110,7 +131,7 @@ class MapEditor(tk.Frame):
         self.infoblock = tk.Canvas(
             self,
             width=200,
-            height=self.map_height * self.tilesize,
+            height=self.map_height * TILESIZE,
             highlightthickness=0,
             background="white",
         )
@@ -134,7 +155,7 @@ class MapEditor(tk.Frame):
             0,
             0,
             self.canvas_padding,
-            self.map_height * self.tilesize,
+            self.map_height * TILESIZE,
             outline=parent["bg"],
             fill=parent["bg"],
         )
@@ -143,11 +164,16 @@ class MapEditor(tk.Frame):
 
         # BINDINGS
         self.canvas.bind("<Button-1>", self.canvas_click_event)
-        self.canvas.bind("<Button-2>", self.canvas_click_right_event)
+        self.canvas.bind("<Button-2>", self.canvas_click_middle_event)
+        self.canvas.bind("<Button-3>", self.canvas_click_right_event)
         self.canvas.bind_all("<w>", self.cycle_north)
         self.canvas.bind_all("<a>", self.cycle_west)
         self.canvas.bind_all("<s>", self.cycle_south)
         self.canvas.bind_all("<d>", self.cycle_east)
+        self.canvas.bind_all("<W>", self.sepa_inv_north)
+        self.canvas.bind_all("<A>", self.sepa_inv_west)
+        self.canvas.bind_all("<S>", self.sepa_inv_south)
+        self.canvas.bind_all("<D>", self.sepa_inv_east)
         self.canvas.bind_all("<f>", self.cycle_floor)
         self.canvas.bind_all("<c>", self.copy_tile)
         self.canvas.bind_all("<v>", self.paste_tile)
@@ -157,15 +183,15 @@ class MapEditor(tk.Frame):
         self.canvas.bind_all("<h>", self.randomize)
         self.canvas.bind("<Motion>", self.canvas_motion_event)
 
-        self.map = Map(self.map_width, self.map_height)
-        self.map.randomize()
-        # self.map = Map.load_blosc("C:/###VS Projects/ode_to_crawlers/data/maps/1.map")
+        self.map = Map(self.map_width, self.map_height, dev_mode=True)
+        # self.map.randomize()
+        self.map = Map.load_blosc("C:/###VS Projects/ode_to_crawlers/data/maps/1.map")
         self.init_map()
         self.update()
         self.draw_keybindings()
 
     def xy_from_event(self, event):
-        return event.x // self.tilesize, event.y // self.tilesize
+        return event.x // TILESIZE, event.y // TILESIZE
 
     def save_blosc(self):
         filetypes = (("Map files", "*.map"),)
@@ -177,6 +203,20 @@ class MapEditor(tk.Frame):
                 self.map.save_blosc(filename)
             else:
                 mb.showerror(title="Error", message="Only .map files are allowed...")
+        else:
+            print("No file selected")
+
+    def save_json(self):
+        filetypes = (("JSON files", "*.json"),)
+        filename = fd.asksaveasfilename(
+            title="Save JSON", filetypes=filetypes, defaultextension=".json"
+        )  # , initialdir="/"
+        if filename:
+            if filename.endswith(".json"):
+                with open(filename, "w") as outfile:
+                    outfile.write(self.map.dumps())
+            else:
+                mb.showerror(title="Error", message="Only .json files are allowed...")
         else:
             print("No file selected")
 
@@ -194,16 +234,37 @@ class MapEditor(tk.Frame):
         else:
             print("No file selected")
 
+    def load_json(self):
+        filetypes = (("Map files", "*.json"),)
+        filename = fd.askopenfilename(
+            title="Open JSON", filetypes=filetypes, defaultextension=".json"
+        )
+        if filename:
+            if filename.endswith(".json"):
+                with open(filename) as infile:
+                    self.map = Map.from_json(**json.load(infile))
+                self.update()
+            else:
+                mb.showerror(title="Error", message="Only .json files are allowed...")
+        else:
+            print("No file selected")
+
     def randomize(self, _):
         self.map.randomize()
         self.update(adjust=False)
 
     def canvas_click_event(self, _):
-        self.map.tiles[self.x][self.y] = MapTile(self.map.randomtile)
+        self.map.tiles[self.x][self.y] = MapTile.random(dev_mode=True)
         self.update()
 
-    def canvas_click_right_event(self, _):
+    def canvas_click_middle_event(self, _):
         pass
+
+    def canvas_click_right_event(self, _):
+        # self.rooms = self.map.get_rooms_all()
+        if self.hover_room not in self.rooms:
+            pprint(self.hover_room)
+            self.rooms.append(self.hover_room)
 
     def canvas_motion_event(self, event):
         """Sets the coordinates for drawing the hover indicator.
@@ -233,53 +294,69 @@ class MapEditor(tk.Frame):
 
     def copy_tile(self, _):
         """Copy current tile"""
-        self.copy = MapTile(**self.map.tiles[self.x][self.y].dump)
+        self.copy = MapTile(dev_mode=True, **self.map.tiles[self.x][self.y].dump)
         self.copy_changed = True
         self.update(adjust=False)
 
     def paste_tile(self, _):
         """Paste previously copied tile. (defaults to ode.ode_constants.EMPTY_TILE)"""
-        self.map.tiles[self.x][self.y] = MapTile(**self.copy.dump)
+        self.map.tiles[self.x][self.y] = MapTile(dev_mode=True, **self.copy.dump)
         self.update()
 
     def clear_tile(self, _):
         """Paste ode.ode_constants.EMPTY_TILE (in other words, delete)"""
-        self.map.tiles[self.x][self.y] = MapTile()
+        self.map.tiles[self.x][self.y] = MapTile(dev_mode=True)
         self.update()
 
     def cycle_north(self, _):
         """Cycle north edge"""
-        self.map.tiles[self.x][self.y].n.style = TileEdgeRandomizer(
-            start_type=self.map.tiles[self.x][self.y].n.style
-        ).next
+        self.map.tiles[self.x][self.y].n.style = list_next(
+            self.map.tiles[self.x][self.y].n.style, EDGE_LIST_SIMPLE
+        )
         self.update()
 
     def cycle_west(self, _):
         """Cycle west edge"""
-        self.map.tiles[self.x][self.y].w.style = TileEdgeRandomizer(
-            start_type=self.map.tiles[self.x][self.y].w.style
-        ).next
+        self.map.tiles[self.x][self.y].w.style = list_next(
+            self.map.tiles[self.x][self.y].w.style, EDGE_LIST_SIMPLE
+        )
         self.update()
 
     def cycle_south(self, _):
         """Cycle south edge"""
-        self.map.tiles[self.x][self.y].s.style = TileEdgeRandomizer(
-            start_type=self.map.tiles[self.x][self.y].s.style
-        ).next
+        self.map.tiles[self.x][self.y].s.style = list_next(
+            self.map.tiles[self.x][self.y].s.style, EDGE_LIST_SIMPLE
+        )
         self.update()
 
     def cycle_east(self, _):
         """Cycle east edge"""
-        self.map.tiles[self.x][self.y].e.style = TileEdgeRandomizer(
-            start_type=self.map.tiles[self.x][self.y].e.style
-        ).next
+        self.map.tiles[self.x][self.y].e.style = list_next(
+            self.map.tiles[self.x][self.y].e.style, EDGE_LIST_SIMPLE
+        )
+        self.update()
+
+    def sepa_inv_north(self, _):
+        self.map.tiles[self.x][self.y].n.style = SEPA_INV
+        self.update()
+
+    def sepa_inv_west(self, _):
+        self.map.tiles[self.x][self.y].w.style = SEPA_INV
+        self.update()
+
+    def sepa_inv_south(self, _):
+        self.map.tiles[self.x][self.y].s.style = SEPA_INV
+        self.update()
+
+    def sepa_inv_east(self, _):
+        self.map.tiles[self.x][self.y].e.style = SEPA_INV
         self.update()
 
     def cycle_floor(self, _):
         """Cycle floor"""
-        self.map.tiles[self.x][self.y].f.style = TileFloorRandomizer(
-            start_type=self.map.tiles[self.x][self.y].f.style
-        ).next
+        self.map.tiles[self.x][self.y].f.style = list_next(
+            self.map.tiles[self.x][self.y].f.style, FLOOR_LIST_SIMPLE
+        )
         self.update()
 
     def init_map(self):
@@ -303,59 +380,71 @@ class MapEditor(tk.Frame):
     def draw_tile(self, x, y):
         self.imggrid_tk[x][y] = ImageTk.PhotoImage(self.map.tiles[x][y].image)
         self.canvas.create_image(
-            x * self.tilesize,
-            y * self.tilesize,
+            x * TILESIZE,
+            y * TILESIZE,
             image=self.imggrid_tk[x][y],
             anchor="nw",
         )
 
     # @timer
-    def draw_room_outline(self, room):
+    def draw_room_outline(self, room, text=""):
         # self.gc_counter += 1
         # if self.gc_counter == 100:
         #     print("collect")
         #     self.gc_counter = 0
         #     gc.collect(2)
-        if not self.draw_room_bool:
+        if not self.draw_room_bool.get():
             return
-        room = self.map.get_room((self.x, self.y), [])
+        # room = self.map.get_room((self.x, self.y), [])
 
         for coords in room:
             x, y = coords
             if self.map.tiles[x][y]._n != "none":
                 self.canvas.create_line(
-                    x * self.tilesize - 2,
-                    y * self.tilesize - 2,
-                    (x + 1) * self.tilesize + 2,
-                    y * self.tilesize - 2,
+                    x * TILESIZE - 2,
+                    y * TILESIZE - 2,
+                    (x + 1) * TILESIZE + 2,
+                    y * TILESIZE - 2,
                     **self.line_settings,
                 )
             if self.map.tiles[x][y]._s != "none":
                 self.canvas.create_line(
-                    x * self.tilesize - 2,
-                    (y + 1) * self.tilesize + 2,
-                    (x + 1) * self.tilesize + 2,
-                    (y + 1) * self.tilesize + 2,
+                    x * TILESIZE - 2,
+                    (y + 1) * TILESIZE + 2,
+                    (x + 1) * TILESIZE + 2,
+                    (y + 1) * TILESIZE + 2,
                     **self.line_settings,
                 )
             if self.map.tiles[x][y]._e != "none":
                 self.canvas.create_line(
-                    (x + 1) * self.tilesize + 2,
-                    y * self.tilesize - 2,
-                    (x + 1) * self.tilesize + 2,
-                    (y + 1) * self.tilesize + 2,
+                    (x + 1) * TILESIZE + 2,
+                    y * TILESIZE - 2,
+                    (x + 1) * TILESIZE + 2,
+                    (y + 1) * TILESIZE + 2,
                     **self.line_settings,
                 )
             if self.map.tiles[x][y]._w != "none":
                 self.canvas.create_line(
-                    x * self.tilesize - 2,
-                    y * self.tilesize - 2,
-                    x * self.tilesize - 2,
-                    (y + 1) * self.tilesize + 2,
+                    x * TILESIZE - 2,
+                    y * TILESIZE - 2,
+                    x * TILESIZE - 2,
+                    (y + 1) * TILESIZE + 2,
                     **self.line_settings,
                 )
         for coords in room:
             self.draw_tile(*coords)
+        self.label_room(room, text)
+
+    def label_room(self, room, text=""):
+        if text != "":
+            text = f"{text}\n{len(room)}"
+        else:
+            text = str(len(room))
+        x, y = room[0]
+        x = x * TILESIZE +2
+        y = y * TILESIZE +2
+        # print(x,y)
+        self.canvas.create_text(x, y, **self.room_text_dict, text=text)
 
     def update(self, adjust=True):
         # self.label_hover_details_text.set(self.map.tiles[self.x][self.y].pretty_text)
@@ -366,20 +455,23 @@ class MapEditor(tk.Frame):
         for w in range(self.map.width):
             for h in range(self.map.height):
                 self.draw_tile(w, h)
-        # self.paint_list = self.map.get_room((self.x, self.y), [])
         if self.copy_changed:
+            if hasattr(self, "info_copied"):
+                del self.info_copied
             self.info_copied = ImageTk.PhotoImage(
                 self.copy.image.resize(
-                    (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
+                    (TILESIZE * 2, TILESIZE * 2), Image.BILINEAR
                 )
             )
             self.copy_changed = False
-        self.draw_room_outline(self.paint_list)
-
-        x0 = (self.x * self.tilesize) - self.hover_boundary - 1
-        y0 = (self.y * self.tilesize) - self.hover_boundary - 1
-        x1 = (self.x * self.tilesize) + self.tilesize + self.hover_boundary + 1
-        y1 = (self.y * self.tilesize) + self.tilesize + self.hover_boundary + 1
+        del self.hover_room
+        self.hover_room = self.map.get_room((self.x, self.y), [])
+        self.draw_room_outline(self.hover_room)
+        
+        x0 = (self.x * TILESIZE) - self.hover_boundary - 1
+        y0 = (self.y * TILESIZE) - self.hover_boundary - 1
+        x1 = (self.x * TILESIZE) + TILESIZE + self.hover_boundary + 1
+        y1 = (self.y * TILESIZE) + TILESIZE + self.hover_boundary + 1
         self.canvas.create_rectangle(x0, y0, x1, y1, outline=self.hover_color)
         self.hover_delay = 0
         self.hover_delay_waiting = False
@@ -387,7 +479,7 @@ class MapEditor(tk.Frame):
         self.infoblock.create_image(20, 20, image=self.info_copied, anchor="nw")
         self.info_hover = ImageTk.PhotoImage(
             self.map.tiles[self.x][self.y].image.resize(
-                (self.tilesize * 2, self.tilesize * 2), Image.BILINEAR
+                (TILESIZE * 2, TILESIZE * 2), Image.BILINEAR
             )
         )
         self.infoblock.create_image(20, 90, image=self.info_hover, anchor="nw")

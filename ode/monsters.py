@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""Monster module 
+
+This module is meant for all classes/functions that deal with
+the representation of monsters in the game.
+
+NOTE: There might be some obsolete classes/functions in here. 
+I move them to ode.obsolete every now and then, if I'm sure I 
+do not want to use them anymore...
+"""
+
 from .constants import *
 from .util import get_files_from_path, roll_dice, BaseLoader
 from random import randint, seed

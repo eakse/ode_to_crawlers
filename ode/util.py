@@ -1,3 +1,16 @@
+# -*- coding: utf-8 -*-
+"""Utility functions 
+
+This module contains some simple functions and/or classes that do
+not have a proper place in their own modules.
+
+Main ones are the class BaseLoader and the function roll_dice()
+
+NOTE: There might be some obsolete classes/functions in here. 
+I move them to ode.obsolete every now and then, if I'm sure I 
+do not want to use them anymore...
+"""
+
 import os
 from ode.constants import *
 from random import randint
