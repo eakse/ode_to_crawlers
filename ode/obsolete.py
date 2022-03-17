@@ -195,3 +195,61 @@ class MapTile_old(BaseLoader):
         ):
             self.tile_img.paste(MAPIMG.corner_sw, (0, 0), MAPIMG.corner_sw)
 
+
+
+class TileEdgeRandomizer:
+    """Simple class to do some simple manipulation of tile edges"""
+
+    def __init__(self, extra_empty=0, start_type=None) -> None:
+        self.types = EDGE_LIST_SIMPLE
+        for _ in range(extra_empty):
+            self.types.insert(0, NONE)
+        if start_type:
+            self.index = self.types.index(start_type)
+        else:
+            self.index = 0
+
+    @property
+    def current(self):
+        return self.types[self.index]
+
+    @property
+    def next(self):
+        self.index += 1
+        if self.index >= len(self.types):
+            self.index = 0
+        return self.current
+
+    @property
+    def random(self):
+        self.index = randint(0, len(self.types) - 1)
+        return self.current
+
+
+class TileFloorRandomizer:
+    """Simple class to do some simple manipulation of floors"""
+
+    def __init__(self, extra_empty=0, extra_floor=0, start_type=FLOOR) -> None:
+        self.types = FLOOR_LIST_SIMPLE
+        for _ in range(extra_empty):
+            self.types.insert(0, NONE)
+        for _ in range(extra_floor):
+            self.types.insert(0, FLOOR)
+        self.index = self.types.index(start_type)
+
+    @property
+    def current(self):
+        return self.types[self.index]
+
+    @property
+    def next(self):
+        self.index += 1
+        if self.index >= len(self.types):
+            self.index = 0
+        return self.current
+
+    @property
+    def random(self):
+        self.index = randint(0, len(self.types) - 1)
+        return self.current
+

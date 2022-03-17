@@ -20,9 +20,9 @@ do not want to use them anymore...
 
 from time import time
 from ode.constants import *
-from ode.util import BaseLoader
+# from ode.util import BaseLoader
 from PIL import Image
-from random import randint, seed, choice
+from random import seed, choice
 import json
 import blosc
 import pickle
@@ -34,6 +34,12 @@ seed()
 
 
 def list_next(item, somelist: list):
+    """Simple function to get the next item in somelist.
+
+    Loops somelist if end reached.
+
+    Returns element zero if item not in somelist
+    """
     if item not in somelist:
         return somelist[0]
     index = somelist.index(item) + 1
@@ -43,6 +49,7 @@ def list_next(item, somelist: list):
 
 
 def list_random(somelist: list):
+    """TODO: remove function and replace with choice(somelist)"""
     return choice(somelist)
 
 
@@ -50,7 +57,7 @@ class TileBase:
     """Base class for TileEdge and TileFloor.
 
     Mainly used to contain some methods/constants that are
-    shared between the 2 classes.
+    shared between the child classes.
 
     NOTE: Should not be instantiated itself, instead instantiate it's
     child classes.
@@ -86,6 +93,7 @@ class TileBase:
 
     @property
     def dump(self) -> dict:
+        """Returns a dict representation of the instance"""
         result = {}
         for key, value in self.__dict__.items():
             if (
@@ -97,6 +105,9 @@ class TileBase:
         return result
 
     def dumps(self, **kwargs) -> str:
+        """Returns a json string representation of the instance.
+        kwargs get passed to the used json.dumps()
+        """
         return json.dumps(self.dump, **kwargs)
 
     @classmethod
@@ -105,6 +116,8 @@ class TileBase:
 
 
 class TileEdge(TileBase):
+    """Class to represent the edge of a MapTile"""
+
     def __init__(self, dev_mode=False, **kwargs):
         super().__init__(dev_mode, **kwargs)
 
@@ -146,6 +159,8 @@ class TileEdge(TileBase):
 
 
 class TileFloor(TileBase):
+    """Class to represent the floor of a MapTile"""
+
     def __init__(self, dev_mode=False, **kwargs):
         # check because new tiles should start with floor instead of none
         if "style" not in kwargs.keys():
@@ -154,8 +169,6 @@ class TileFloor(TileBase):
 
     @property
     def style(self) -> str:
-        if self._style not in FLOOR_LIST:
-            self._style = FLOOR
         return self._style
 
     @style.setter
@@ -163,6 +176,7 @@ class TileFloor(TileBase):
         if value in FLOOR_LIST:
             self._style = value
             return True
+        self._style = FLOOR
         return False
 
     @property
@@ -189,64 +203,9 @@ class TileFloor(TileBase):
         return f"{PATH_IMAGES_FLOOR}{self._style}.png"
 
 
-class TileEdgeRandomizer:
-    """Simple class to do some simple manipulation of tile edges"""
-
-    def __init__(self, extra_empty=0, start_type=None) -> None:
-        self.types = EDGE_LIST_SIMPLE
-        for _ in range(extra_empty):
-            self.types.insert(0, NONE)
-        if start_type:
-            self.index = self.types.index(start_type)
-        else:
-            self.index = 0
-
-    @property
-    def current(self):
-        return self.types[self.index]
-
-    @property
-    def next(self):
-        self.index += 1
-        if self.index >= len(self.types):
-            self.index = 0
-        return self.current
-
-    @property
-    def random(self):
-        self.index = randint(0, len(self.types) - 1)
-        return self.current
-
-
-class TileFloorRandomizer:
-    """Simple class to do some simple manipulation of floors"""
-
-    def __init__(self, extra_empty=0, extra_floor=0, start_type=FLOOR) -> None:
-        self.types = FLOOR_LIST_SIMPLE
-        for _ in range(extra_empty):
-            self.types.insert(0, NONE)
-        for _ in range(extra_floor):
-            self.types.insert(0, FLOOR)
-        self.index = self.types.index(start_type)
-
-    @property
-    def current(self):
-        return self.types[self.index]
-
-    @property
-    def next(self):
-        self.index += 1
-        if self.index >= len(self.types):
-            self.index = 0
-        return self.current
-
-    @property
-    def random(self):
-        self.index = randint(0, len(self.types) - 1)
-        return self.current
-
-
 class MapTile:
+    """Class to represent a map tile."""
+
     DUMP_EXCLUDE_LIST = ["_dev_mode", "_image"]
 
     def __init__(self, dev_mode=False, **kwargs):
@@ -281,8 +240,19 @@ class MapTile:
         cls,
         edge_list: list = EDGE_LIST_SIMPLE,
         floor_list: list = FLOOR_LIST_SIMPLE,
-        floor_random: bool = False, **kwargs
-    ):
+        floor_random: bool = False,
+        **kwargs,
+    ) -> "MapTile":
+        """Generates and constructs a random instance of MapTile
+
+        Args:
+            edge_list (list, optional): List of edges to choose from. Defaults to EDGE_LIST_SIMPLE.
+            floor_list (list, optional): Lis of floors to choose from. Only used when floor_random==True. Defaults to FLOOR_LIST_SIMPLE.
+            floor_random (bool, optional): Whether or not to randomize the tiles' floor. If False, floor=edo.constants.NONE. Defaults to False.
+
+        Returns:
+            MapTile: New instance
+        """
         if floor_random:
             _kwargs = {"f": choice(floor_list)}
         else:
@@ -302,6 +272,10 @@ class MapTile:
 
     @property
     def image(self) -> Image:
+        """Returns a PIL.Image() representation of the tile
+
+        TODO: implement logic for hidden doors etc.
+        """
         # TODO: perhaps move to class Map due to corners
         __image = Image.open(self._f.filename)
         __paste = Image.open(self._n.filename)
@@ -316,6 +290,7 @@ class MapTile:
 
     @property
     def dump(self) -> dict:
+        """Returns a dict representation of the instance"""
         result = {}
         for key, value in self.__dict__.items():
             if (
@@ -330,6 +305,9 @@ class MapTile:
         return result
 
     def dumps(self, **kwargs) -> str:
+        """Returns a json string representation of the instance
+        kwargs get passed to the used json.dumps()
+        """
         return json.dumps(self.dump, **kwargs)
 
     @property
@@ -383,32 +361,43 @@ class MapTile:
         return value in FLOOR_LIST
 
 
-class Map(BaseLoader):
-    def __init__(self, width: int = 50, height: int = 50, tiles=None, dev_mode=False) -> None:
+class Map:
+    """Main class in this module to represent a map."""
+
+    def __init__(
+        self, width: int = 50, height: int = 50, tiles=None, dev_mode=False
+    ) -> None:
         self.width = width
         self.height = height
         self.dev_mode = dev_mode
         if tiles:
             self.tiles = [
-                [MapTile(dev_mode=dev_mode, **tiles[x][y]) for x in range(self.width)] for y in range(self.height)
+                [MapTile(dev_mode=dev_mode, **tiles[x][y]) for x in range(self.width)]
+                for y in range(self.height)
             ]
         else:
             self.tiles = [
-                [MapTile(dev_mode=dev_mode) for _ in range(self.width)] for _ in range(self.height)
+                [MapTile(dev_mode=dev_mode) for _ in range(self.width)]
+                for _ in range(self.height)
             ]
 
     @property
     def dump(self) -> dict:
+        """Returns a dict representation of the instance"""
         return {
             "width": self.width,
             "height": self.height,
             "tiles": [
-                [self.tiles[x][y].dump for x in range(self.width)] for y in range(self.height)
-            ]
+                [self.tiles[x][y].dump for x in range(self.width)]
+                for y in range(self.height)
+            ],
         }
 
     def dumps(self, **kwargs) -> str:
-        return json.dumps(self.dump, **kwargs)        
+        """Returns a json string representation of the instance
+        kwargs get passed to the used json.dumps()
+        """
+        return json.dumps(self.dump, **kwargs)
 
     @classmethod
     def from_json(cls, **kwargs) -> "Map":
@@ -464,19 +453,19 @@ class Map(BaseLoader):
                 return True
         return False
 
-
-
     def get_rooms_all(self) -> list:
-        self.all_rooms_visisted = [[False for _ in range(self.width)] for _ in range(self.height)]
+        """Currently borked, do not use"""
+        self.all_rooms_visisted = [
+            [False for _ in range(self.width)] for _ in range(self.height)
+        ]
         self.all_rooms = []
         for x in range(self.width):
             for y in range(self.width):
-                room = self.get_room((x,y), check_all=True)
+                room = self.get_room((x, y), check_all=True)
                 if len(room) > 0:
                     self.all_rooms.append(room)
         print(len(self.all_rooms))
-        return(self.all_rooms)
-
+        return self.all_rooms
 
     def get_room(self, start: tuple, visited: list = [], check_all=False) -> list:
         """Recursive function to find boundaries of a room.
@@ -534,6 +523,7 @@ class Map(BaseLoader):
     @classmethod
     def load_blosc(cls, filename="test.map"):
         """Load map object.
+
         Maps is stored as a blosc compressed pickled Map object"""
         with open(filename, "rb") as infile:
             obj = pickle.loads(blosc.decompress(infile.read()))
@@ -541,20 +531,27 @@ class Map(BaseLoader):
 
     @classmethod
     def load_blosc_json(cls, filename="test.map"):
-        """Load map object.
+        """DEPRECATED.
+
+        Load map object.
+
         Maps is stored as a blosc compressed pickled JSON"""
         with open(filename, "rb") as infile:
             obj = pickle.loads(blosc.decompress(infile.read()))
         return cls(obj)
 
     def save_blosc_json(self, filename="test.map"):
-        """Save map object.
+        """DEPRECATED.
+
+        Save map object.
+
         Maps is stored as a blosc compressed pickled JSON"""
         with open(filename, "wb") as outfile:
             outfile.write(blosc.compress(pickle.dumps(self.to_json)))
 
     def save_blosc(self, filename="test.map"):
         """Save map object.
+
         Maps is stored as a blosc compressed pickled Map object"""
         start = time()
         print(f"start: {start}")
