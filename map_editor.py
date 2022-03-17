@@ -5,8 +5,8 @@ Please note that this file is a bit of a mess. It's not intended for
 readability, modularity or any such fancy concepts.
 (Sarcasm very much intended)
 
-This is just a tool to help me build the game, so it's built under 
-Murphy's law:
+This is just a tool to help me build the game, so it's built under
+Murphy's law:  
 If it's stupid but it works, it isn't stupid.
 
 Please note that the class MapEditor is extremely messy ☹

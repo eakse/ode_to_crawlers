@@ -20,6 +20,7 @@ do not want to use them anymore...
 
 from time import time
 from ode.constants import *
+
 # from ode.util import BaseLoader
 from PIL import Image
 from random import seed, choice
@@ -361,12 +362,104 @@ class MapTile:
         return value in FLOOR_LIST
 
 
+class MapCoord:
+    """Simple class to represent and handle Map coordinates"""
+
+    def __init__(self, x, y):
+        self._x = x
+        self._y = y
+
+    def __dict__(self) -> dict:
+        return self.dump
+
+    @property
+    def coords(self) -> tuple:
+        return (self._x, self._y)
+
+    @coords.setter
+    def coords(self, coords: tuple) -> tuple:
+        self._x, self._y = coords
+        return self.coords
+
+    def xy(self, **kwargs):
+        """Update coords, accepts x:int, y:int, t:tuple(x,y) as kwargs"""
+        for key, value in kwargs.items():
+            if key == "x":
+                self._x = int(value)
+            elif key == "y":
+                self._y = int(value)
+            elif key == "t":
+                self._x, self._y = value
+            else:
+                raise KeyError(f"Unexpected key '{key}' received...")
+        return self.coords
+
+    @property
+    def x(self) -> int:
+        return self._x
+
+    @x.setter
+    def x(self, value) -> tuple:
+        self._x = value
+        return self.coords
+
+    @property
+    def y(self) -> int:
+        return self._y
+
+    @y.setter
+    def y(self, value) -> tuple:
+        self._y = value
+        return self.coords
+
+    @property
+    def dump(self) -> dict:
+        return {"x": self._x, "y": self._y}
+
+    def dumps(self, **kwargs) -> str:
+        return json.dumps(self.dump, **kwargs)
+
+
+class Room:
+    """Class to represent a room, which is a set of connected MapCoord in a Map
+
+    Accepts coordinates as a list of tuples(x, y) or a list of dicts={x:int, y:int}
+
+    Use to fe. place monster groups, and perhaps events."""
+
+    def __init__(self, coords: list = []):
+        self._coords = []
+        for element in coords:
+            if type(element) == dict:
+                self._coords.append(MapCoord(element["x"], element["y"]))
+            else:
+                self._coords.append(*coords)
+        self._coords.sort()
+
+    def __len__(self) -> int:
+        return self.size
+
+    @property
+    def size(self) -> int:
+        return len(self._coords)
+
+    @property
+    def coords(self) -> list:
+        return self._coords
+
+    @property
+    def first(self) -> tuple:
+        if len(self._coords) > 0:
+            return self.coords[0].coords
+        
+
+    # @
+
+
 class Map:
     """Main class in this module to represent a map."""
 
-    def __init__(
-        self, width: int = 50, height: int = 50, tiles=None, dev_mode=False
-    ) -> None:
+    def __init__(self, width: int = 50, height: int = 50, tiles=None, dev_mode=False):
         self.width = width
         self.height = height
         self.dev_mode = dev_mode

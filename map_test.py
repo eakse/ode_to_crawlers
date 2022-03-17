@@ -9,6 +9,15 @@ import blosc
 ### TESTING
 
 
+coord = MapCoord(3,5)
+coord.x = 1
+print(*coord.coords)
+coord.y=3
+coord.coords = (3,5)
+print(x,y)
+print(coord.coords)
+# print(coord.xy(z=3))
+
 tile = MapTile.random(floor_random=True)
 print(tile.dump)
 
@@ -16,7 +25,7 @@ print(tile.dump)
 # tile.image.show()
 
 
-tile_edge = TileEdge.random(TileEdge.EDGE_LIST)
+tile_edge = TileEdge.random(EDGE_LIST)
 print(tile_edge.dump)
 exit(0)
 print(tile_edge.EDGE_LIST_VISIBLE)
