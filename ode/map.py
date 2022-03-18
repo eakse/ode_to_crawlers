@@ -64,7 +64,7 @@ class TileBase:
     NOTE: Should not be instantiated itself, instead instantiate it's
     child classes.
     """
-
+    __base_path = ""
     DUMP_EXCLUDE_LIST = ["_dev_mode"]
 
     def __init__(self, dev_mode=False, **kwargs):
@@ -116,9 +116,14 @@ class TileBase:
     def random(cls, somelist: list):
         return cls(style=choice(somelist))
 
+    @property
+    def filename(self) -> str:
+        return f"{self.__base_path}{self._style}.png"
 
 class TileEdge(TileBase):
     """Class to represent the edge of a MapTile"""
+
+    __base_path = PATH_IMAGES_EDGE
 
     def __init__(self, dev_mode=False, **kwargs):
         super().__init__(dev_mode, **kwargs)
@@ -155,13 +160,11 @@ class TileEdge(TileBase):
     def passable(self) -> bool:
         return self._style in EDGE_LIST_PASSABLE
 
-    @property
-    def filename(self) -> str:
-        return f"{PATH_IMAGES_EDGE}{self._style}.png"
-
 
 class TileFloor(TileBase):
     """Class to represent the floor of a MapTile"""
+
+    __base_path = PATH_IMAGES_FLOOR
 
     def __init__(self, dev_mode=False, **kwargs):
         # check because new tiles should start with floor instead of none
@@ -182,7 +185,8 @@ class TileFloor(TileBase):
         return False
 
     @property
-    def visible(self) -> bool:
+    def dev_visible(self) -> bool:
+        """only used for SEPA_INV for now, which is used to separate rooms invisibly"""
         if self._dev_mode:
             return self._style in FLOOR_LIST_VISIBLE_DEV
         else:
@@ -200,24 +204,23 @@ class TileFloor(TileBase):
     def passable_warn(self) -> bool:
         return self._style in FLOOR_LIST_PASSABLE_WARN
 
-    @property
-    def filename(self) -> str:
-        return f"{PATH_IMAGES_FLOOR}{self._style}.png"
-
 
 class MapTile:
     """Class to represent a map tile."""
 
     DUMP_EXCLUDE_LIST = ["_dev_mode", "_image"]
 
-    def __init__(self, dev_mode=False, **kwargs):
+    def __init__(self, dev_mode=False, visited=False, seen=False, **kwargs):
         if hasattr(self, "dev_mode"):
             self._dev_mode = self.dev_mode or dev_mode
         else:
             self._dev_mode = dev_mode
         
-        if "visited" in kwargs.keys():
-            
+        self._visisted = visited
+        self._seen = seen
+
+        if "seen" in kwargs.keys():
+            self._seen = kwargs["seen"]
 
         for edge in ["n", "e", "s", "w"]:
             if not hasattr(self, edge):
@@ -268,12 +271,33 @@ class MapTile:
 
     @property
     def dev_mode(self) -> bool:
+        """dev mode override"""
         return self._dev_mode
 
     @dev_mode.setter
     def dev_mode(self, value: bool) -> bool:
         self._dev_mode = value
         return value
+
+    @property
+    def visisted(self) -> bool:
+        """True if the MapTile has been visisted by player"""
+        return self._visisted
+
+    @visisted.setter
+    def visisted(self, value: bool) -> bool:
+        self._visisted = value
+        return self._visisted
+
+    @property
+    def seen(self) -> bool:
+        """True if the MapTile has been seen by player"""
+        return self._seen
+
+    @seen.setter
+    def seen(self, value: bool) -> bool:
+        self._seen = value
+        return self._seen
 
     @property
     def image(self) -> Image:

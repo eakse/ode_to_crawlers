@@ -14,7 +14,9 @@ room = Room([(5, 10), (6, 9), (6, 10), (7, 9), (7, 10)])
 room2 = Room([{"x": 5, "y": 10}, {"x": 6, "y": 9}, {"x": 6, "y": 10}, {"x": 7, "y": 9}, {"x": 7, "y": 10}])
 print(room2 == room)
 
-
+tile = MapTile.random(floor_random=True)
+print(tile.dump)
+print(tile.n.filename)
 
 exit(0)
 coord = MapCoord(3,5)
