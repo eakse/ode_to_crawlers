@@ -3,13 +3,29 @@
 from ode.map import *
 import pickle
 import blosc
+from PIL import Image
+from ode.util import *
 
 
 ################################################################################################################################################
 ### TESTING
 
 
+@timer
+def laod() -> Map:
+    return Map.load_blosc("C:/###VS Projects/ode_to_crawlers/data/maps/1.map")
 
+
+@timer
+def show(map: Map):
+    map.get_image(0,0,30,30).show()
+
+map = laod()
+map.dev_mode = False
+# for _ in range(1000):
+show(map)
+
+exit(0)
 room = Room([(5, 10), (6, 9), (6, 10), (7, 9), (7, 10)])
 room2 = Room([{"x": 5, "y": 10}, {"x": 6, "y": 9}, {"x": 6, "y": 10}, {"x": 7, "y": 9}, {"x": 7, "y": 10}])
 print(room2 == room)
@@ -18,7 +34,6 @@ tile = MapTile.random(floor_random=True)
 print(tile.dump)
 print(tile.n.filename)
 
-exit(0)
 coord = MapCoord(3,5)
 coord.x = 1
 print(*coord.coords)

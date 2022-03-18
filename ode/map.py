@@ -35,26 +35,6 @@ import pickle
 seed()
 
 
-def list_next(item, somelist: list):
-    """Simple function to get the next item in somelist.
-
-    Loops somelist if end reached.
-
-    Returns element zero if item not in somelist
-    """
-    if item not in somelist:
-        return somelist[0]
-    index = somelist.index(item) + 1
-    if index >= len(somelist):
-        index = 0
-    return somelist[index]
-
-
-def list_random(somelist: list):
-    """TODO: remove function and replace with choice(somelist)"""
-    return choice(somelist)
-
-
 class TileBase:
     """Base class for TileEdge and TileFloor.
 
@@ -64,7 +44,7 @@ class TileBase:
     NOTE: Should not be instantiated itself, instead instantiate it's
     child classes.
     """
-    __base_path = ""
+
     DUMP_EXCLUDE_LIST = ["_dev_mode"]
 
     def __init__(self, dev_mode=False, **kwargs):
@@ -108,6 +88,7 @@ class TileBase:
 
     def dumps(self, **kwargs) -> str:
         """Returns a json string representation of the instance.
+
         kwargs get passed to the used json.dumps()
         """
         return json.dumps(self.dump, **kwargs)
@@ -116,14 +97,9 @@ class TileBase:
     def random(cls, somelist: list):
         return cls(style=choice(somelist))
 
-    @property
-    def filename(self) -> str:
-        return f"{self.__base_path}{self._style}.png"
 
 class TileEdge(TileBase):
     """Class to represent the edge of a MapTile"""
-
-    __base_path = PATH_IMAGES_EDGE
 
     def __init__(self, dev_mode=False, **kwargs):
         super().__init__(dev_mode, **kwargs)
@@ -160,11 +136,19 @@ class TileEdge(TileBase):
     def passable(self) -> bool:
         return self._style in EDGE_LIST_PASSABLE
 
+    @property
+    def filename(self) -> str:
+        if not self._dev_mode:
+            if self._style == SEPA_INV:
+                return f"{PATH_IMAGES_EDGE}{NONE}.png"
+            else:
+                return f"{PATH_IMAGES_EDGE}{self._style}.png"
+        else:
+            return f"{PATH_IMAGES_EDGE}{self._style}.png"
+
 
 class TileFloor(TileBase):
     """Class to represent the floor of a MapTile"""
-
-    __base_path = PATH_IMAGES_FLOOR
 
     def __init__(self, dev_mode=False, **kwargs):
         # check because new tiles should start with floor instead of none
@@ -186,7 +170,7 @@ class TileFloor(TileBase):
 
     @property
     def dev_visible(self) -> bool:
-        """only used for SEPA_INV for now, which is used to separate rooms invisibly"""
+        """only used for SEPA_INV for now, which is used to separate rooms"""
         if self._dev_mode:
             return self._style in FLOOR_LIST_VISIBLE_DEV
         else:
@@ -204,6 +188,10 @@ class TileFloor(TileBase):
     def passable_warn(self) -> bool:
         return self._style in FLOOR_LIST_PASSABLE_WARN
 
+    @property
+    def filename(self) -> str:
+        return f"{PATH_IMAGES_FLOOR}{self._style}.png"
+
 
 class MapTile:
     """Class to represent a map tile."""
@@ -215,7 +203,7 @@ class MapTile:
             self._dev_mode = self.dev_mode or dev_mode
         else:
             self._dev_mode = dev_mode
-        
+
         self._visisted = visited
         self._seen = seen
 
@@ -270,6 +258,14 @@ class MapTile:
         return cls(**_kwargs, **kwargs)
 
     @property
+    def passable(self) -> dict:
+        result = {}
+        for index, key in enumerate(["n", "e", "s", "w"]):
+            edge = getattr(self, key)
+            result[FACING_LIST[index]] = edge.passable
+        return result
+
+    @property
     def dev_mode(self) -> bool:
         """dev mode override"""
         return self._dev_mode
@@ -277,6 +273,9 @@ class MapTile:
     @dev_mode.setter
     def dev_mode(self, value: bool) -> bool:
         self._dev_mode = value
+        for key in ['n', "e", "s", "w", "f"]:
+            obj = getattr(self, key)
+            setattr(obj, "dev_mode", self._dev_mode)
         return value
 
     @property
@@ -335,6 +334,7 @@ class MapTile:
 
     def dumps(self, **kwargs) -> str:
         """Returns a json string representation of the instance
+
         kwargs get passed to the used json.dumps()
         """
         return json.dumps(self.dump, **kwargs)
@@ -421,7 +421,7 @@ class MapCoord:
     def __iter__(self):
         self.__cnt = 0
         return self
-    
+
     def __next__(self):
         self.__cnt += 1
         if self.__cnt == 1:
@@ -505,7 +505,7 @@ class Room:
         # since self._coords is a sorted property we can just do direct
         # comparison of elements by index.
         # not sure if the below is faster than using indexes of both lists
-        # since this  is not a method that gets called often (likely never 
+        # since this  is not a method that gets called often (likely never
         # ingame) I don't care that much about performance
         for index, element in enumerate(self.coords):
             if element != other.coords[index]:
@@ -524,14 +524,13 @@ class Room:
     def first(self) -> tuple:
         if len(self._coords) > 0:
             return self.coords[0].coords
-        
+
     @property
     def dump(self) -> dict:
         return {"coords": [coord.dump for coord in self._coords]}
-        
+
     def dumps(self, **kwargs) -> str:
         return json.dumps(self.dump, **kwargs)
-    # @
 
 
 class Map:
@@ -540,7 +539,9 @@ class Map:
     def __init__(self, width: int = 50, height: int = 50, tiles=None, dev_mode=False):
         self.width = width
         self.height = height
-        self.dev_mode = dev_mode
+        self._dev_mode = dev_mode
+        # Load a dummy image for easy code completion (eg, set the type correctly)
+        self._image = Image.open(PATH_DUMMY_IMAGE)
         if tiles:
             self.tiles = [
                 [MapTile(dev_mode=dev_mode, **tiles[x][y]) for x in range(self.width)]
@@ -551,6 +552,17 @@ class Map:
                 [MapTile(dev_mode=dev_mode) for _ in range(self.width)]
                 for _ in range(self.height)
             ]
+
+    @property
+    def dev_mode(self) -> bool:
+        return self._dev_mode
+    
+    @dev_mode.setter
+    def dev_mode(self, value: bool):
+        self._dev_mode = value
+        for row in self.tiles:
+            for tile in row:
+                tile.dev_mode = value
 
     @property
     def dump(self) -> dict:
@@ -569,6 +581,42 @@ class Map:
         kwargs get passed to the used json.dumps()
         """
         return json.dumps(self.dump, **kwargs)
+
+    def get_image(
+        self, xt: int = None, yt: int = None, xb: int = None, yb: int = None
+    ) -> Image:
+        if xt:
+            xt = max(0, xt)
+        else:
+            xt = 0
+        if xb:
+            xb = min(self.width, xb)
+        else:
+            xb = self.width
+        if xt > xb:
+            raise ValueError(f"Top Left X ({xt}) > Bottom Left X ({xb})")
+        if yt:
+            yt = max(0, yt)
+        else:
+            yt = 0
+        if yb:
+            yb = min(self.height, yb)
+        else:
+            yb = self.height
+        if yt > yb:
+            raise ValueError(f"Top Left Y ({yt}) > Bottom Left Y ({yb})")
+        # print(xt, yt, xb, yb)
+        img_size = lambda a, b: (a - b) * TILESIZE
+        tile_mult = lambda a: a * TILESIZE
+        paste_coord = lambda x, y: (tile_mult(x), tile_mult(y))
+        # print(cf(xb, xt))
+        # print(cf(yb, yt))
+        self._image = Image.new("RGB", (img_size(xb, xt), img_size(yb, yt)))
+        for x in range(xt, xb):
+            for y in range(yt, yb):
+                # print(self.tiles[x][y].dump, cc(x, y), ct(y))
+                self._image.paste(self.tiles[x][y].image, paste_coord(x,y), self.tiles[x][y].image)
+        return self._image
 
     @classmethod
     def from_json(cls, **kwargs) -> "Map":
@@ -692,7 +740,7 @@ class Map:
     #     pass
 
     @classmethod
-    def load_blosc(cls, filename="test.map"):
+    def load_blosc(cls, filename="test.map") -> "Map":
         """Load map object.
 
         Maps is stored as a blosc compressed pickled Map object"""
@@ -701,7 +749,7 @@ class Map:
         return obj
 
     @classmethod
-    def load_blosc_json(cls, filename="test.map"):
+    def load_blosc_json(cls, filename="test.map") -> "Map":
         """DEPRECATED.
 
         Load map object.
@@ -726,8 +774,12 @@ class Map:
         Maps is stored as a blosc compressed pickled Map object"""
         start = time()
         print(f"start: {start}")
+        old_dev = self._dev_mode
+        self._dev_mode = False
         with open(filename, "wb") as outfile:
             outfile.write(blosc.compress(pickle.dumps(self)))
+        self._dev_mode = old_dev
         end = time()
         print(f"end:   {end}")
         print(f"diff:  {end-start}")
+

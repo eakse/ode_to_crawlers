@@ -253,3 +253,42 @@ class TileFloorRandomizer:
         self.index = randint(0, len(self.types) - 1)
         return self.current
 
+
+
+
+
+class Facing:
+    def __init__(self, facing=NORTH):
+        if facing not in FACING_LIST:
+            facing = NORTH
+        self._facing = facing
+
+    def __repr__(self) -> str:
+        return self._facing
+
+    def __str__(self) -> str:
+        return self._facing
+
+    @property
+    def right(self) -> str:
+        self._facing = list_next(self._facing, FACING_LIST)
+        return self._facing
+
+    @property
+    def left(self) -> str:
+        self._facing = list_next(self._facing, FACING_LIST[::-1])
+        return self._facing
+
+    @property
+    def turn(self) -> str:
+        self._facing = list_next(self._facing, FACING_LIST)
+        self._facing = list_next(self._facing, FACING_LIST)
+        return self._facing
+
+    @property
+    def dump(self) -> dict:
+        return {"facing": self._facing}
+
+    def dumps(self, **kwargs) -> str:
+        return json.dumps(self.dump, **kwargs)
+

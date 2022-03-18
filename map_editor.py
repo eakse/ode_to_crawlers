@@ -18,9 +18,9 @@ import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox as mb
 from PIL import Image, ImageTk
-from ode.map import Map, MapTile, Room, list_next
+from ode.map import Map, MapTile, Room
 from ode.constants import *
-from ode.util import timer
+from ode.util import timer, list_next
 from pprint import pprint
 import gc
 import json

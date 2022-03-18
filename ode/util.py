@@ -13,14 +13,35 @@ do not want to use them anymore...
 
 import os
 from ode.constants import *
-from random import randint
+from random import randint, choice
 import json
 from PIL import Image
 from time import time
 
 
+def list_next(item, somelist: list):
+    """Simple function to get the next item in somelist.
+
+    Loops somelist if end reached.
+
+    Returns element zero if item not in somelist
+    """
+    if item not in somelist:
+        return somelist[0]
+    index = somelist.index(item) + 1
+    if index >= len(somelist):
+        index = 0
+    return somelist[index]
+
+
+def list_random(somelist: list):
+    """TODO: remove function and replace with choice(somelist)"""
+    return choice(somelist)
+
+
 def timer(func):
-    '''Decorator that reports the execution time.'''
+    """Decorator that reports the execution time."""
+
     def wrap(*args, **kwargs):
         start = time()
         # print(f"start: {start}")
@@ -29,12 +50,15 @@ def timer(func):
         # print(f"end:   {end}")
         print(f"diff:  {end-start}")
         return result
+
     return wrap
+
 
 class BaseLoader(object):
     """Base class from which most other classes inherit from.
     Functionality to dynamically load/save as JSON
     """
+
     def __init__(self, data=None):
         if data == None:
             return
@@ -121,8 +145,8 @@ def roll_dice(dice, stored=0) -> int:
         3d6+4+d4-1
 
     Args:
-        dice (str or int): the dice to roll. Accepts int for arithmatic reasons, and 
-                           to be able to return fixed values (eg for armor/defense etc.) 
+        dice (str or int): the dice to roll. Accepts int for arithmatic reasons, and
+                           to be able to return fixed values (eg for armor/defense etc.)
         stored (int, optional): Stores the previous result. Defaults to 0.
 
     Raises:
@@ -162,8 +186,7 @@ def d20() -> int:
 
 
 def autorename_tiles():
-    """Simple function to rename sprites from piskelapp to the correct names.
-    """
+    """Simple function to rename sprites from piskelapp to the correct names."""
     prev_dir = os.getcwd()
     os.chdir(PATH_MAP_IMAGES)
     os.rename("sprite_00.png", "map_floor.png")
