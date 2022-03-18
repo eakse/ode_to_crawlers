@@ -9,12 +9,19 @@ import blosc
 ### TESTING
 
 
+
+room = Room([(5, 10), (6, 9), (6, 10), (7, 9), (7, 10)])
+room2 = Room([{"x": 5, "y": 10}, {"x": 6, "y": 9}, {"x": 6, "y": 10}, {"x": 7, "y": 9}, {"x": 7, "y": 10}])
+print(room2 == room)
+
+
+
+exit(0)
 coord = MapCoord(3,5)
 coord.x = 1
 print(*coord.coords)
 coord.y=3
 coord.coords = (3,5)
-print(x,y)
 print(coord.coords)
 # print(coord.xy(z=3))
 
@@ -27,7 +34,6 @@ print(tile.dump)
 
 tile_edge = TileEdge.random(EDGE_LIST)
 print(tile_edge.dump)
-exit(0)
 print(tile_edge.EDGE_LIST_VISIBLE)
 print(tile_edge.dump)
 tile_edge.style = "wall"

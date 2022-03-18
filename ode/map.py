@@ -10,7 +10,8 @@ the json.dumps method.
 
 They should also have at least one method that functions similar
 to json.load to call the class constructor with the provided 
-args/kwargs
+args/kwargs. Preferably this should be done directly from the
+dunder init.
 
 NOTE: There might be some obsolete classes/functions in here. 
 I move them to ode.obsolete every now and then, if I'm sure I 
@@ -214,6 +215,9 @@ class MapTile:
             self._dev_mode = self.dev_mode or dev_mode
         else:
             self._dev_mode = dev_mode
+        
+        if "visited" in kwargs.keys():
+            
 
         for edge in ["n", "e", "s", "w"]:
             if not hasattr(self, edge):
@@ -372,6 +376,37 @@ class MapCoord:
     def __dict__(self) -> dict:
         return self.dump
 
+    def __eq__(self, other: "MapCoord") -> bool:
+        return self.coords == other.coords
+
+    def __ne__(self, other: "MapCoord") -> bool:
+        return self.coords != other.coords
+
+    def __lt__(self, other: "MapCoord") -> bool:
+        return self.coords < other.coords
+
+    def __gt__(self, other: "MapCoord") -> bool:
+        return self.coords > other.coords
+
+    def __le__(self, other: "MapCoord") -> bool:
+        return self.coords <= other.coords
+
+    def __ge__(self, other: "MapCoord") -> bool:
+        return self.coords >= other.coords
+
+    def __iter__(self):
+        self.__cnt = 0
+        return self
+    
+    def __next__(self):
+        self.__cnt += 1
+        if self.__cnt == 1:
+            return self._x
+        elif self.__cnt == 2:
+            return self._y
+        else:
+            raise StopIteration
+
     @property
     def coords(self) -> tuple:
         return (self._x, self._y)
@@ -424,6 +459,7 @@ class Room:
     """Class to represent a room, which is a set of connected MapCoord in a Map
 
     Accepts coordinates as a list of tuples(x, y) or a list of dicts={x:int, y:int}
+    The latter is needed for loading/saving to JSON
 
     Use to fe. place monster groups, and perhaps events."""
 
@@ -433,18 +469,31 @@ class Room:
             if type(element) == dict:
                 self._coords.append(MapCoord(element["x"], element["y"]))
             else:
-                self._coords.append(*coords)
+                self._coords.append(MapCoord(*element))
         self._coords.sort()
 
     def __len__(self) -> int:
         return self.size
+
+    def __eq__(self, other: "Room") -> bool:
+        if self.size != other.size:
+            return False
+        # since self._coords is a sorted property we can just do direct
+        # comparison of elements by index.
+        # not sure if the below is faster than using indexes of both lists
+        # since this  is not a method that gets called often (likely never 
+        # ingame) I don't care that much about performance
+        for index, element in enumerate(self.coords):
+            if element != other.coords[index]:
+                return False
+        return True
 
     @property
     def size(self) -> int:
         return len(self._coords)
 
     @property
-    def coords(self) -> list:
+    def coords(self) -> list[MapCoord]:
         return self._coords
 
     @property
@@ -452,7 +501,12 @@ class Room:
         if len(self._coords) > 0:
             return self.coords[0].coords
         
-
+    @property
+    def dump(self) -> dict:
+        return {"coords": [coord.dump for coord in self._coords]}
+        
+    def dumps(self, **kwargs) -> str:
+        return json.dumps(self.dump, **kwargs)
     # @
 
 

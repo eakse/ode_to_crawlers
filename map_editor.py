@@ -18,7 +18,7 @@ import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox as mb
 from PIL import Image, ImageTk
-from ode.map import Map, MapTile, list_next
+from ode.map import Map, MapTile, Room, list_next
 from ode.constants import *
 from ode.util import timer
 from pprint import pprint
@@ -61,7 +61,7 @@ class MapEditor(tk.Frame):
         self.hover_delay_room = 500
         self.hover_delay_waiting = False
         self.fix_edges = True
-        self.hover_room = ()
+        self.hover_room = Room
         self.line_settings = {"fill": "yellow"}  # , "dash": (2, 2)
         self.room_text_dict = {"font": ("Consolas 6"), "fill": "yellow", "anchor": "nw"}
         self.rooms = []
@@ -263,8 +263,8 @@ class MapEditor(tk.Frame):
     def canvas_click_right_event(self, _):
         # self.rooms = self.map.get_rooms_all()
         if self.hover_room not in self.rooms:
-            pprint(self.hover_room)
             self.rooms.append(self.hover_room)
+            self.update()
 
     def canvas_motion_event(self, event):
         """Sets the coordinates for drawing the hover indicator.
@@ -387,7 +387,7 @@ class MapEditor(tk.Frame):
         )
 
     # @timer
-    def draw_room_outline(self, room, text=""):
+    def draw_room_outline(self, room: Room, text=""):
         # self.gc_counter += 1
         # if self.gc_counter == 100:
         #     print("collect")
@@ -397,8 +397,8 @@ class MapEditor(tk.Frame):
             return
         # room = self.map.get_room((self.x, self.y), [])
 
-        for coords in room:
-            x, y = coords
+        for coord in room.coords:
+            x, y = coord
             if self.map.tiles[x][y]._n != "none":
                 self.canvas.create_line(
                     x * TILESIZE - 2,
@@ -431,16 +431,13 @@ class MapEditor(tk.Frame):
                     (y + 1) * TILESIZE + 2,
                     **self.line_settings,
                 )
-        for coords in room:
-            self.draw_tile(*coords)
+        for coord in room.coords:
+            self.draw_tile(*coord)
         self.label_room(room, text)
 
-    def label_room(self, room, text=""):
-        if text != "":
-            text = f"{text}\n{len(room)}"
-        else:
-            text = str(len(room))
-        x, y = room[0]
+    def label_room(self, room: Room, text=""):
+        text = f"{text}\n{room.size}"
+        x, y = room.first
         x = x * TILESIZE +2
         y = y * TILESIZE +2
         # print(x,y)
@@ -465,7 +462,7 @@ class MapEditor(tk.Frame):
             )
             self.copy_changed = False
         del self.hover_room
-        self.hover_room = self.map.get_room((self.x, self.y), [])
+        self.hover_room = Room(coords=self.map.get_room((self.x, self.y), []))
         self.draw_room_outline(self.hover_room)
         
         x0 = (self.x * TILESIZE) - self.hover_boundary - 1
@@ -475,6 +472,9 @@ class MapEditor(tk.Frame):
         self.canvas.create_rectangle(x0, y0, x1, y1, outline=self.hover_color)
         self.hover_delay = 0
         self.hover_delay_waiting = False
+
+        for room in self.rooms:
+            self.label_room(room, "___")
 
         self.infoblock.create_image(20, 20, image=self.info_copied, anchor="nw")
         self.info_hover = ImageTk.PhotoImage(
