@@ -79,7 +79,7 @@ class Movement(tk.Frame):
             **self.party.dump_map_paint,
         )
         # self.mapcanvas.place(x=0, y=0)
-        self.mapcanvas.pack()
+        self.mapcanvas.grid(row=1,column=0)
         self.create_bindings()
 
         # self.map_label = tk.Label(self, image = self.map_image, bg=TKINTER_TRANSPARENT_COLOR)
