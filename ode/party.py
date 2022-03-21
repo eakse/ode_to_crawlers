@@ -17,18 +17,19 @@ class Party:
         """Returns a tuple(x, y) of coords which is in front of the current facing"""
         x, y = self._x, self._y
         if self.facing == NORTH:
-            x -= 1
-        elif self.facing == SOUTH:
-            x += 1
-        elif self.facing == WEST:
             y -= 1
-        elif self.facing == EAST:
+        elif self.facing == SOUTH:
             y += 1
+        elif self.facing == WEST:
+            x -= 1
+        elif self.facing == EAST:
+            x += 1
         return (x, y)
 
     @property
     def forward(self) -> tuple:
-        """"""
+        """Changes the current party coordinates to move one tile forward, based
+        on the current facing."""
         if self.facing == NORTH:
             self._y -= 1
         elif self.facing == SOUTH:

@@ -1,3 +1,4 @@
+from turtle import width
 from ode.constants import *
 from ode.map import Map
 from ode.party import Party
@@ -8,10 +9,6 @@ from functools import wraps
 
 fsize = lambda x: x * TILESIZE
 # rotate = lambda x: x * 90
-
-
-
-
 
 
 class MapCanvas(tk.Canvas):
@@ -48,7 +45,6 @@ class MapCanvas(tk.Canvas):
                 result[key] = value
         return result
 
-
     def custom_move(self, **kwargs):
         self.custom_process_kwargs(**kwargs)
         self.custom_update()
@@ -61,6 +57,52 @@ class MapCanvas(tk.Canvas):
             image=self.party_images[self.facing_index],
             **self.img_settings,
         )
+
+
+class InfoBlock(tk.Frame):
+    def __init__(self, parent, *args, **kwargs):
+        self.obj_defaults = {"anchor": "nw"}
+        self.north = NONE
+        self.east = NONE
+        self.south = NONE
+        self.west = NONE
+        self.info_data = {}
+        super().__init__(parent, *args, self.custom_process_kwargs(**kwargs))
+        self.north_strvar = tk.StringVar()
+        self.north_label = tk.Label(self, textvariable=self.north_strvar)
+        self.north_label.grid(row=0, column=1)
+        self.east_strvar = tk.StringVar()
+        self.east_label = tk.Label(self, textvariable=self.east_strvar)
+        self.east_label.grid(row=1, column=2)
+        self.south_strvar = tk.StringVar()
+        self.south_label = tk.Label(self, textvariable=self.south_strvar)
+        self.south_label.grid(row=2, column=1)
+        self.west_strvar = tk.StringVar()
+        self.west_label = tk.Label(self, textvariable=self.west_strvar)
+        self.west_label.grid(row=1, column=0)
+        self.custom_update(data=self.info_data)
+
+    def custom_update(self, data: dict = {}):
+        if len(data) > 0:
+            for key, value in data.items():
+                if key in FACING_LIST:
+                    # print(key, value.style)
+                    setattr(self, key, value.style)
+        for key in FACING_LIST:
+            label = getattr(self, f"{key}_strvar")
+            label.set(getattr(self, key))
+
+
+
+    def custom_process_kwargs(self, **kwargs) -> dict:
+        """parse kwards, and return leftover"""
+        result = {}
+        for key, value in kwargs.items():
+            if key == K_INFO_BLOCK_DATA:
+                setattr(self, K_INFO_BLOCK_DATA, value)
+            else:
+                result[key] = value
+        return result
 
 
 class Movement(tk.Frame):
@@ -78,8 +120,12 @@ class Movement(tk.Frame):
             height=fsize(self.map.height),
             **self.party.dump_map_paint,
         )
-        # self.mapcanvas.place(x=0, y=0)
-        self.mapcanvas.grid(row=1,column=0)
+        self.mapgridinfo = InfoBlock(
+            self, info_data=self.map.tiles[self.party.x][self.party.y].dump_long_dict, width=200
+        )
+
+        self.mapcanvas.grid(row=0, column=0)
+        self.mapgridinfo.grid(row=0, column=1)
         self.create_bindings()
 
         # self.map_label = tk.Label(self, image = self.map_image, bg=TKINTER_TRANSPARENT_COLOR)
@@ -91,6 +137,7 @@ class Movement(tk.Frame):
     def custom_update(self):
         # print(map.tiles[self.party.x][self.party.y].dump)
         self.mapcanvas.custom_move(**self.party.dump_map_paint)
+        self.mapgridinfo.custom_update(self.map.tiles[self.party.x][self.party.y].dump_long_dict)
 
     def create_bindings(self):
         self.mapcanvas.bind_all("<w>", self.move_forward)
@@ -98,7 +145,6 @@ class Movement(tk.Frame):
         self.mapcanvas.bind_all("<s>", self.move_turn_around)
         self.mapcanvas.bind_all("<d>", self.move_turn_right)
         self.mapcanvas.bind_all("<Escape>", exit)
-
 
     # def update_decorator(func):
     #     def wrap(*args, **kwargs):
@@ -109,7 +155,7 @@ class Movement(tk.Frame):
 
     # @update_decorator
     def move_forward(self, _):
-        x,y = self.party.forward_coords()
+        x, y = self.party.forward_coords()
         if self.map.tiles[x][y].passable[self.party.facing]:
             print("y")
         else:
@@ -131,6 +177,7 @@ class Movement(tk.Frame):
     def move_turn_right(self, _):
         self.party.right
         self.custom_update()
+
 
 if __name__ == "__main__":
     root = tk.Tk(className=" ODE Movement Tester")

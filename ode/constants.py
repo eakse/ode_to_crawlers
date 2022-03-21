@@ -28,6 +28,7 @@ K_PARTY_X = "party_x"
 K_PARTY_Y = "party_y"
 K_FACING = "facing"
 K_FACING_INDEX = "facing_index"
+K_INFO_BLOCK_DATA = "info_data"
 
 ##### POSSIBLE EDGE STYLES
 NONE = "none"

@@ -317,6 +317,15 @@ class MapTile:
         return __image
 
     @property
+    def dump_long_dict(self) -> dict:
+        return {
+            NORTH: self._n,
+            EAST:  self._e,
+            SOUTH: self._s,
+            WEST:  self._w
+        }
+
+    @property
     def dump(self) -> dict:
         """Returns a dict representation of the instance"""
         result = {}
