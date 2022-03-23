@@ -2,11 +2,11 @@
 --
 Idea is to create a dungeon crawler in the vein of the old-school crawler Demise.
 
-Currently working:
+**Currently working:**
 * Simple map editor
 * Movement
 
-Next steps:
+**Next steps:**
 * Flesh out stats and combat system
 * Place combats on map in rooms (basic framework for this is in place)
 
