@@ -35,19 +35,19 @@ class Party:
         elif self.facing == SOUTH:
             self._y += 1
         elif self.facing == WEST:
-            self._x += 1
-        elif self.facing == EAST:
             self._x -= 1
+        elif self.facing == EAST:
+            self._x += 1
         return (self._x, self._y)
 
     @property
     def left(self) -> str:
-        self._facing = list_next(self._facing, FACING_LIST)
+        self._facing = list_next(self._facing, FACING_LIST[::-1])
         return self._facing        
 
     @property
     def right(self) -> str:
-        self._facing = list_next(self._facing, FACING_LIST[::-1])
+        self._facing = list_next(self._facing, FACING_LIST)
         return self._facing
 
     @property

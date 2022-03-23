@@ -92,8 +92,6 @@ class InfoBlock(tk.Frame):
             label = getattr(self, f"{key}_strvar")
             label.set(getattr(self, key))
 
-
-
     def custom_process_kwargs(self, **kwargs) -> dict:
         """parse kwards, and return leftover"""
         result = {}
@@ -121,7 +119,9 @@ class Movement(tk.Frame):
             **self.party.dump_map_paint,
         )
         self.mapgridinfo = InfoBlock(
-            self, info_data=self.map.tiles[self.party.x][self.party.y].dump_long_dict, width=200
+            self,
+            info_data=self.map.tiles[self.party.x][self.party.y].dump_long_dict,
+            width=200,
         )
 
         self.mapcanvas.grid(row=0, column=0)
@@ -137,7 +137,9 @@ class Movement(tk.Frame):
     def custom_update(self):
         # print(map.tiles[self.party.x][self.party.y].dump)
         self.mapcanvas.custom_move(**self.party.dump_map_paint)
-        self.mapgridinfo.custom_update(self.map.tiles[self.party.x][self.party.y].dump_long_dict)
+        self.mapgridinfo.custom_update(
+            self.map.tiles[self.party.x][self.party.y].dump_long_dict
+        )
 
     def create_bindings(self):
         self.mapcanvas.bind_all("<w>", self.move_forward)
@@ -155,11 +157,15 @@ class Movement(tk.Frame):
 
     # @update_decorator
     def move_forward(self, _):
+        print(
+            f"{str(self.map.tiles[self.party.x][self.party.y].passable[self.party.facing]):5.5}",
+            f"{self.party.facing:5.5}",
+            self.map.tiles[self.party.x][self.party.y].dump[self.party.facing[0]]["style"],
+        )
         if self.map.tiles[self.party.x][self.party.y].passable[self.party.facing]:
-            print("y", self.party.facing, self.map.tiles[self.party.x][self.party.y].dump)
             self.party.forward
         else:
-            print("n")
+            pass
         self.custom_update()
 
     # @update_decorator
