@@ -155,12 +155,11 @@ class Movement(tk.Frame):
 
     # @update_decorator
     def move_forward(self, _):
-        x, y = self.party.forward_coords()
-        if self.map.tiles[x][y].passable[self.party.facing]:
-            print("y")
+        if self.map.tiles[self.party.x][self.party.y].passable[self.party.facing]:
+            print("y", self.party.facing, self.map.tiles[self.party.x][self.party.y].dump)
+            self.party.forward
         else:
             print("n")
-        self.party.forward
         self.custom_update()
 
     # @update_decorator

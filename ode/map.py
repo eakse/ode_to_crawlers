@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
 """Map class module, with all other classes that the Map class uses
 
-The idea of this module is to provide a Map class that can be used
-to represent the maps in the game.
+The idea of this module is to provide a Map class that can be used to represent
+the maps in the game.
 
-All classes should have 2 methods (dump and dumps) similar to how
-json.dump and json.dumps work. The dumps will pass any kwargs to
-the json.dumps method.
+All classes should have 2 methods (dump and dumps) similar to how json.dump and
+json.dumps work. The dumps will pass any kwargs to the json.dumps method.
 
-They should also have at least one method that functions similar
-to json.load to call the class constructor with the provided 
-args/kwargs. Preferably this should be done directly from the
-dunder init.
+They should also have at least one method that functions similar to json.load to
+call the class constructor with the provided args/kwargs. Preferably this should
+be done directly from the dunder init.
 
-NOTE: There might be some obsolete classes/functions in here. 
-I move them to ode.obsolete every now and then, if I'm sure I 
-do not want to use them anymore...
+NOTE: There might be some obsolete classes/functions in here. I move them to
+ode.obsolete every now and then, if I'm sure I do not want to use them
+anymore... 
 """
 
 
