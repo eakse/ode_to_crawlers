@@ -185,8 +185,8 @@ class Movement(tk.Frame):
 
 
 if __name__ == "__main__":
-    root = tk.Tk(className=" ODE Movement Tester")
-    # root.geometry("1024x768")
+    root = tk.Tk(className=" ODE Movement Tester") # the space is needed as it seems to switch between lower/upper on the first character...
+    root.geometry("1024x768")
     # root.wm_attributes("-transparentcolor", TKINTER_TRANSPARENT_COLOR)
     root.option_add("*tearOff", False)
     root.config(bg="white")
