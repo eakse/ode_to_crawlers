@@ -61,7 +61,7 @@ class MapEditor(tk.Frame):
         self.hover_delay_room = 500
         self.hover_delay_waiting = False
         self.fix_edges = True
-        self.hover_room = Room
+        self.hover_room = None
         self.line_settings = {"fill": "yellow"}  # , "dash": (2, 2)
         self.room_text_dict = {"font": ("Consolas 6"), "fill": "yellow", "anchor": "nw"}
         self.rooms = []
@@ -163,6 +163,17 @@ class MapEditor(tk.Frame):
         # self.infoblock.pack(padx=self.canvas_padding,pady=self.canvas_padding)
 
         # BINDINGS
+        self.set_bindings()
+
+        self.map = Map(self.map_width, self.map_height, dev_mode=True)
+        # self.map.randomize()
+        self.map = Map.from_json_file("C:/###VS Projects/ode_to_crawlers/data/maps/1.json")
+        self.map.dev_mode = True
+        self.init_map()
+        self.update()
+        self.draw_keybindings()
+
+    def set_bindings(self):
         self.canvas.bind("<Button-1>", self.canvas_click_event)
         self.canvas.bind("<Button-2>", self.canvas_click_middle_event)
         self.canvas.bind("<Button-3>", self.canvas_click_right_event)
@@ -181,14 +192,9 @@ class MapEditor(tk.Frame):
         self.canvas.bind_all("<n>", self.clear_map)
         self.canvas.bind_all("<z>", self.fix_surrounding)
         self.canvas.bind_all("<h>", self.randomize)
+        # self.canvas.bind_all("<r>", self.room_save)
         self.canvas.bind("<Motion>", self.canvas_motion_event)
 
-        self.map = Map(self.map_width, self.map_height, dev_mode=True)
-        # self.map.randomize()
-        self.map = Map.load_blosc("C:/###VS Projects/ode_to_crawlers/data/maps/1.map")
-        self.init_map()
-        self.update()
-        self.draw_keybindings()
 
     def xy_from_event(self, event):
         return event.x // TILESIZE, event.y // TILESIZE
@@ -461,10 +467,11 @@ class MapEditor(tk.Frame):
                 )
             )
             self.copy_changed = False
-        del self.hover_room
-        self.hover_room = Room(coords=self.map.get_room((self.x, self.y), []))
+        # del self.hover_room
+        self.hover_room = Room(coords=self.map.get_room((self.x, self.y), [], first=True))
         self.draw_room_outline(self.hover_room)
-        
+        print(len(self.map.room_list))
+
         x0 = (self.x * TILESIZE) - self.hover_boundary - 1
         y0 = (self.y * TILESIZE) - self.hover_boundary - 1
         x1 = (self.x * TILESIZE) + TILESIZE + self.hover_boundary + 1

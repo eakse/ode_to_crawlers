@@ -8,10 +8,10 @@ Idea is to create a dungeon crawler in the vein of the old-school crawler Demise
 
 **Next steps:**
 * Flesh out stats and combat system
-* Place combats on map in rooms (basic framework for this is in place)
+* Place encounters on map in rooms (basic framework for this is in place)
 
 I'm using JSON for most of the data sources. Sofar all the classes I use can load/save to JSON.
 
 Currently using tKinter for the mapping app.
 
-Planning to use panda3d for the actual game itself...
+Planning to use panda3d for the actual game itself, but I want the core working before I think about actual 3d.

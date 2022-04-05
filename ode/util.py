@@ -55,7 +55,9 @@ def timer(func):
 
 
 class BaseLoader(object):
-    """Base class from which most other classes inherit from.
+    """DEPRECATED
+    
+    Base class from which most other classes inherit from.
     Functionality to dynamically load/save as JSON
     """
 
@@ -136,13 +138,8 @@ def get_files_from_path(path: str = ".", ext=None) -> list:
     return result
 
 
-def roll_dice(dice, stored=0) -> int:
-    """Recursive method to return an int from standard dice notation.
-    Valid exampes:
-        3d6
-        2d4+2
-        d6
-        3d6+4+d4-1
+def _roll_dice(dice, stored=0) -> int:
+    """Actual recursive method to roll the dice. Should only be called from roll_dice()
 
     Args:
         dice (str or int): the dice to roll. Accepts int for arithmatic reasons, and
@@ -155,6 +152,7 @@ def roll_dice(dice, stored=0) -> int:
     Returns:
         int: result of the dice roll(s)
     """
+
     if type(dice) == int or dice.isnumeric():
         stored = stored + int(dice)
         result = stored
@@ -177,9 +175,28 @@ def roll_dice(dice, stored=0) -> int:
         raise ValueError(
             f"ValueError exception thrown\n  Dice:  {dice}\n  Stored: {stored}"
         )
-    # TODO: Not sure if I should actually use the max below. I might need to split the main function into two functions and only apply the max() on the final result.
-    return max(result, 0)
+    return result
 
+
+def roll_dice(dice) -> int:
+    """Method to return an int from standard dice notation.
+    Valid exampes:
+        3d6
+        2d4+2
+        d6
+        3d6+4+d4-1
+
+    Args:
+        dice (str or int): the dice to roll. Accepts int for arithmatic reasons, and
+                           to be able to return fixed values (eg for armor/defense etc.)
+
+    Raises:
+        ValueError: Raised when the function doesn't know what to do with the input dice
+
+    Returns:
+        int: result of the dice roll(s)
+    """
+    return max(0, _roll_dice(dice))
 
 def d20() -> int:
     return roll_dice("d20")

@@ -202,7 +202,7 @@ class MapTile:
         else:
             self._dev_mode = dev_mode
 
-        self._visisted = visited
+        self._visited = visited
         self._seen = seen
 
         if "seen" in kwargs.keys():
@@ -494,9 +494,14 @@ class Room:
 
     Use to fe. place monster groups, and perhaps events."""
 
-    def __init__(self, coords: list = []):
+    def __init__(self, coords: list or dict = []):
         self._coords = []
-        for element in coords:
+        # TODO: this needs fixing
+        if type(coords) == dict and "coords" in coords:
+            _coords = coords['coords']
+        else:
+            _coords = coords
+        for element in _coords:
             if type(element) == dict:
                 self._coords.append(MapCoord(element["x"], element["y"]))
             else:
@@ -518,6 +523,27 @@ class Room:
             if element != other.coords[index]:
                 return False
         return True
+
+    def __lt__(self, other: "Room") -> bool:
+        if self.coords > other.coords:
+            return True 
+        return False
+        
+    def __gt__(self, other: "Room") -> bool:
+        if self.coords < other.coords:
+            return True
+        return False
+
+    def __iter__(self):
+        self.__cnt = 0
+        return self
+    
+    def __next__(self):
+        if self.__cnt >= self.size-1:
+            raise StopIteration
+        else:
+            self.__cnt += 1
+        return self._coords[self.__cnt]
 
     @property
     def size(self) -> int:
@@ -543,7 +569,7 @@ class Room:
 class Map:
     """Main class in this module to represent a map."""
 
-    def __init__(self, width: int = 50, height: int = 50, tiles=None, dev_mode=False):
+    def __init__(self, width: int = 50, height: int = 50, tiles=None, dev_mode=False, room_list=[]):
         self.width = width
         self.height = height
         self._dev_mode = dev_mode
@@ -559,6 +585,9 @@ class Map:
                 [MapTile(dev_mode=dev_mode) for _ in range(self.width)]
                 for _ in range(self.height)
             ]
+        self._room_list = []
+        if len(room_list) > 0:
+            self._room_list = [Room(room) for room in room_list]
 
     @property
     def dev_mode(self) -> bool:
@@ -581,6 +610,7 @@ class Map:
                 [self.tiles[x][y].dump for x in range(self.width)]
                 for y in range(self.height)
             ],
+            "room_list": [room.dump for room in self._room_list]
         }
 
     def dumps(self, **kwargs) -> str:
@@ -588,6 +618,16 @@ class Map:
         kwargs get passed to the used json.dumps()
         """
         return json.dumps(self.dump, **kwargs)
+
+    @property
+    def room_list(self) -> list:
+        """Returns a list of Room objects"""
+        return self._room_list
+
+    def add_room(self, room: Room):
+        if room not in self._room_list:
+            self._room_list.append(room)
+            self._room_list.sort()
 
     def get_image(
         self, xt: int = None, yt: int = None, xb: int = None, yb: int = None
@@ -624,10 +664,6 @@ class Map:
                 # print(self.tiles[x][y].dump, cc(x, y), ct(y))
                 self._image.paste(self.tiles[x][y].image, paste_coord(x,y), self.tiles[x][y].image)
         return self._image
-
-    @classmethod
-    def from_json(cls, **kwargs) -> "Map":
-        return cls(**kwargs)
 
     def randomize(self, fix_edges=True):
         """Randomizes the map.
@@ -693,7 +729,7 @@ class Map:
         print(len(self.all_rooms))
         return self.all_rooms
 
-    def get_room(self, start: tuple, visited: list = [], check_all=False) -> list:
+    def get_room(self, start: tuple, visited_coords: list = [], first=False) -> list:
         """Recursive function to find boundaries of a room.
 
         Args:
@@ -704,33 +740,35 @@ class Map:
             list: (x, y) coordinates as a list
         """
         x, y = start
-        if check_all and self.all_rooms_visisted[x][y]:
-            return visited
-        elif start in visited:
-            if check_all:
-                self.all_rooms_visisted[x][y] = True
-            return visited
-        else:
-            if check_all:
-                self.all_rooms_visisted[x][y] = True
-            visited.append(start)
+        # if check_all and self.all_rooms_visisted[x][y]:
+        #     return visited
+        # elif start in visited:
+        #     if check_all:
+        #         self.all_rooms_visisted[x][y] = True
+        #     return visited
+        # else:
+        # if check_all:
+        #     self.all_rooms_visisted[x][y] = True
+        visited_coords.append(start)
         if not (self.tiles[x][y].w.solid_room) and x - 1 >= 0:
             new_coords = (x - 1, y)
-            if not (new_coords in visited):
-                self.get_room(new_coords, visited=visited)
+            if not (new_coords in visited_coords):
+                self.get_room(new_coords, visited_coords=visited_coords)
         if not (self.tiles[x][y].e.solid_room) and x + 1 < self.height:
             new_coords = (x + 1, y)
-            if not (new_coords in visited):
-                self.get_room(new_coords, visited=visited)
+            if not (new_coords in visited_coords):
+                self.get_room(new_coords, visited_coords=visited_coords)
         if not (self.tiles[x][y].n.solid_room) and y - 1 >= 0:
             new_coords = (x, y - 1)
-            if not (new_coords in visited):
-                self.get_room(new_coords, visited=visited)
+            if not (new_coords in visited_coords):
+                self.get_room(new_coords, visited_coords=visited_coords)
         if not (self.tiles[x][y].s.solid_room) and y + 1 < self.height:
             new_coords = (x, y + 1)
-            if not (new_coords in visited):
-                self.get_room(new_coords, visited=visited)
-        return sorted(visited)
+            if not (new_coords in visited_coords):
+                self.get_room(new_coords, visited_coords=visited_coords)
+        if first:
+            self.add_room(Room(visited_coords))
+        return sorted(visited_coords)
 
     # @property
     # def randomtile(self):
@@ -754,6 +792,16 @@ class Map:
         with open(filename, "rb") as infile:
             obj = pickle.loads(blosc.decompress(infile.read()))
         return obj
+
+    @classmethod
+    def from_json(cls, **kwargs) -> "Map":
+        return cls(**kwargs)
+
+    @classmethod
+    def from_json_file(cls, filename) -> "Map":
+        with open(filename) as infile:
+            data = json.load(infile)
+        return cls(**data)
 
     @classmethod
     def load_blosc_json(cls, filename="test.map") -> "Map":
