@@ -167,7 +167,7 @@ class MapEditor(tk.Frame):
 
         self.map = Map(self.map_width, self.map_height, dev_mode=True)
         # self.map.randomize()
-        self.map = Map.from_json_file("C:/###VS Projects/ode_to_crawlers/data/maps/1.json")
+        self.map = Map.from_json_file("./data/maps/1.json")
         self.map.dev_mode = True
         self.init_map()
         self.update()
@@ -463,7 +463,7 @@ class MapEditor(tk.Frame):
                 del self.info_copied
             self.info_copied = ImageTk.PhotoImage(
                 self.copy.image.resize(
-                    (TILESIZE * 2, TILESIZE * 2), Image.BILINEAR
+                    (TILESIZE * 2, TILESIZE * 2), Image.Resampling.BILINEAR
                 )
             )
             self.copy_changed = False
@@ -486,7 +486,7 @@ class MapEditor(tk.Frame):
         self.infoblock.create_image(20, 20, image=self.info_copied, anchor="nw")
         self.info_hover = ImageTk.PhotoImage(
             self.map.tiles[self.x][self.y].image.resize(
-                (TILESIZE * 2, TILESIZE * 2), Image.BILINEAR
+                (TILESIZE * 2, TILESIZE * 2), Image.Resampling.BILINEAR
             )
         )
         self.infoblock.create_image(20, 90, image=self.info_hover, anchor="nw")

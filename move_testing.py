@@ -106,7 +106,7 @@ class InfoBlock(tk.Frame):
 class Movement(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        self.map = Map.load_blosc("C:/###VS Projects/ode_to_crawlers/data/maps/1.map")
+        self.map = Map.load_blosc("./data/maps/1.map")
         self.map.dev_mode = False
         self.party = Party()
         self.party.facing = EAST
