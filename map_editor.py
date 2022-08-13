@@ -493,7 +493,7 @@ class MapEditor(tk.Frame):
 
 
 if __name__ == "__main__":
-    root = tk.Tk(className=" ODE Map Editor")
+    root = tk.Tk(className="oDE Map Editor")
     root.option_add("*tearOff", False)
     root.config(bg="white")
     main = MapEditor(root)

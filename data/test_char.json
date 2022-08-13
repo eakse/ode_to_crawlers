@@ -1,0 +1,19 @@
+{
+    "name": "Pasta",
+    "class_data": [],
+    "stats": {
+        "str": 0,
+        "dex": 0,
+        "wis": 0,
+        "int": 0,
+        "con": 0,
+        "agi": 0,
+        "cha": 0
+    },
+    "feats": [],
+    "resisitance": {
+
+    },
+    "skills": [],
+    "hpMax": 50
+}
