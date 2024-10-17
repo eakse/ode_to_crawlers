@@ -24,6 +24,7 @@ from ode.util import timer, list_next
 from pprint import pprint
 import gc
 import json
+from time import time
 
 
 class MenuBar(tk.Menu):
@@ -220,7 +221,7 @@ class MapEditor(tk.Frame):
         if filename:
             if filename.endswith(".json"):
                 with open(filename, "w") as outfile:
-                    outfile.write(self.map.dumps())
+                    outfile.write(self.map.dumps(separators=(",",":")))
             else:
                 mb.showerror(title="Error", message="Only .json files are allowed...")
         else:
@@ -441,6 +442,7 @@ class MapEditor(tk.Frame):
             self.draw_tile(*coord)
         self.label_room(room, text)
 
+    @timer
     def label_room(self, room: Room, text=""):
         text = f"{text}\n{room.size}"
         x, y = room.first
@@ -449,15 +451,22 @@ class MapEditor(tk.Frame):
         # print(x,y)
         self.canvas.create_text(x, y, **self.room_text_dict, text=text)
 
+    @timer
     def update(self, adjust=True):
+        start = time()
         # self.label_hover_details_text.set(self.map.tiles[self.x][self.y].pretty_text)
         if self.fix_edges:
             self.map.fix_edges()
+        print(f"fix_edges: {time() - start}")
+        start = time()
         if adjust and self.auto_adjust.get():
             self.map.adjust_surrounding(self.x, self.y)
+        
         for w in range(self.map.width):
             for h in range(self.map.height):
                 self.draw_tile(w, h)
+        print(f"draw:      {time() - start}")
+        start = time()
         if self.copy_changed:
             if hasattr(self, "info_copied"):
                 del self.info_copied
@@ -467,10 +476,14 @@ class MapEditor(tk.Frame):
                 )
             )
             self.copy_changed = False
+        print(f"copy_cha:  {time() - start}")
+        start = time()
+        
         # del self.hover_room
-        self.hover_room = Room(coords=self.map.get_room((self.x, self.y), [], first=True))
-        self.draw_room_outline(self.hover_room)
-        print(len(self.map.room_list))
+        if self.draw_room_bool:
+            self.hover_room = Room(coords=self.map.get_room((self.x, self.y), [], first=True))
+            self.draw_room_outline(self.hover_room)
+        # print(len(self.map.room_list))
 
         x0 = (self.x * TILESIZE) - self.hover_boundary - 1
         y0 = (self.y * TILESIZE) - self.hover_boundary - 1

@@ -29,7 +29,6 @@ import pickle
 
 
 # https://stackoverflow.com/a/68944117/9267296
-
 seed()
 
 
@@ -39,7 +38,7 @@ class TileBase:
     Mainly used to contain some methods/constants that are
     shared between the child classes.
 
-    NOTE: Should not be instantiated itself, instead instantiate it's
+    NOTE: Should not be instantiated itself, instead instantiate its
     child classes.
     """
 
@@ -242,7 +241,7 @@ class MapTile:
         Args:
             edge_list (list, optional): List of edges to choose from. Defaults to EDGE_LIST_SIMPLE.
             floor_list (list, optional): Lis of floors to choose from. Only used when floor_random==True. Defaults to FLOOR_LIST_SIMPLE.
-            floor_random (bool, optional): Whether or not to randomize the tiles' floor. If False, floor=edo.constants.NONE. Defaults to False.
+            floor_random (bool, optional): Whether or not to randomize the tiles' floor. If False, floor=ode.constants.NONE. Defaults to False.
 
         Returns:
             MapTile: New instance
@@ -726,7 +725,7 @@ class Map:
                 room = self.get_room((x, y), check_all=True)
                 if len(room) > 0:
                     self.all_rooms.append(room)
-        print(len(self.all_rooms))
+        # print(len(self.all_rooms))
         return self.all_rooms
 
     def get_room(self, start: tuple, visited_coords: list = [], first=False) -> list:
